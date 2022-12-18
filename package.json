@@ -1,0 +1,19 @@
+{
+  "name": "story-server",
+  "version": "1.0.0",
+  "description": "STORY server.",
+  "main": "app.js",
+  "repository": "https://github.com/rotisseriechicken/story-server",
+  "author": "ROTISSERIE CHICKEN",
+  "license": false,
+  "private": false,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.5.4"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
