@@ -1,7 +1,20 @@
-//  Initializing architecture
+//  Initializing socket architecture
 const options = { /* ... */ };
 const io = require("socket.io")(options);
 const PORT = process.env.PORT || 3000;
+
+//  Initializing spinner
+var request = require('request');
+var schedule = require('node-schedule');
+
+const job = schedule.scheduleJob('*/10 * * * *', function(){ // Every 10 minutes
+    console.log('🔃 Spinning...');
+    request('https://story-server.onrender.com/', function (error, response, body) {
+      if (!error && response.statusCode == 200) {
+        console.log('🔃 Spin spunned™');
+      }
+    });
+});
 
 //  Server Variables
 var UserList = []; // List of connected users, and their user objects
