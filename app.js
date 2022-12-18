@@ -13,10 +13,10 @@ io.on("connect", socket => {
 
 });
 
-socket.on("entry", (word) => {
+socket.on("w", (word) => {
     
     //  Update story--and emit new entry--if this submission passes inspection
-    socket.emit(word);
+    socket.emit('+', word);
 
 });
 
