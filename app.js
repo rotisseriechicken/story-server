@@ -24,15 +24,14 @@ var STORY = []; // The story data so far
 
 io.on("connect", socket => {
 
-    //  On connection
+    //  On new client connecting to server
     socket.emit('c', 'ok');
 
-});
-
-io.on("w", (word) => {
-    
-    //  Update story--and emit new entry--if this submission passes inspection
-    io.emit('+', word);
+    //  On new word from a submitter
+    socket.on('w', (word) => { //  Update story--and emit new entry--if this submission passes inspection
+        console.log(word);
+        io.emit('+', word);
+    });
 
 });
 
