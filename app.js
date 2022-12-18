@@ -4,8 +4,8 @@ const io = require("socket.io")(options);
 const PORT = process.env.PORT || 3000;
 
 //  Initializing spinner
-var request = require('request');
-var schedule = require('node-schedule');
+const schedule = require('node-schedule');
+const request = require('request');
 
 const job = schedule.scheduleJob('*/10 * * * *', function(){ // Every 10 minutes
     console.log('🔃 Spinning...');
