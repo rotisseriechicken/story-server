@@ -1,5 +1,5 @@
 //  Initializing socket architecture
-const options = { /* ... */ };
+const options = { cors: { origin: "*" }};
 const io = require("socket.io")(options);
 const PORT = process.env.PORT || 3000;
 
@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 const schedule = require('node-schedule');
 const request = require('request');
 
-const job = schedule.scheduleJob('*/10 * * * *', function(){ // Every 10 minutes
+const job = schedule.scheduleJob('*/4 * * * *', function(){ // Every 4 minutes (agressive downspin...)
     console.log('🔃 Spinning...');
     request('https://story-server.onrender.com/', function (error, response, body) {
       if (!error && response.statusCode == 200) {
@@ -20,9 +20,12 @@ const job = schedule.scheduleJob('*/10 * * * *', function(){ // Every 10 minutes
 var UserList = []; // List of connected users, and their user objects
 var CurrentWordId = 0; // 
 
+var STORY = []; // The story data so far
+
 io.on("connect", socket => {
 
     //  On connection
+    socket.emit('c', 'ok');
 
 });
 
@@ -34,3 +37,4 @@ io.on("w", (word) => {
 });
 
 io.listen(PORT); // Listen on server-designated port
+console.log('Server started on port ' + PORT);
