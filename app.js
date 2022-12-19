@@ -76,6 +76,7 @@ const schedule = require('node-schedule');
 //  Server Variables
 var VERSION = 1; // Server's version; Used to validate major changes with the client
 var UserList = []; // List of connected users, and their user objects; Used to track cooldowns.
+var UserObject = {}; // Object of pointers to connected users
 var WaitList = []; // List of users that are required to wait before submitting further entries.
 
 var STORY = []; // The story data so far
@@ -89,11 +90,12 @@ var FLAG_SPUN_ONCE = false; // If true, the spinner has begun
 //  Server functions
 function checkAliveUsers(){
   for(var USER of UserList){
-    USER.timeout(15000).emit("q", (err) => {
+    UserObject[USER].timeout(15000).emit("q", (err) => {
       if (err) {
         // client considered disconnected
-        var DISCONNECTED_USER = USER.id;
-        UserList.splice(UserList.findIndex(elem => elem[0] === USER[0]), 1);
+        var DISCONNECTED_USER = USER;
+        delete UserObject[USER];
+        UserList.splice(UserList.findIndex(elem => elem === USER), 1);
         console.log('X<-- User ' + DISCONNECTED_USER + ' disconnected (' + UserList.length + ' connected)');
       }
     });
@@ -123,7 +125,8 @@ function validateWord(word){
 io.on("connect", socket => {
 
     //  On new client connecting to server
-    UserList.push([socket.id]);
+    UserList.push(socket.id); // Add to list of connected users
+    UserObject[socket.id] = socket; // Add pointer to object referenced by array
     console.log('O--> User ' + socket.id + ' connected (' + UserList.length + ' connected)');
     socket.emit('c', [WHICH_STORY, STORY]);
 
