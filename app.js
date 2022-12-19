@@ -124,7 +124,6 @@ io.on("connect", socket => {
 
     //  On new client connecting to server
     UserList.push(socket);
-    console.log(socket);
     console.log('User ' + socket.id + ' disconnected (' + UserList.length + ' connected)');
     socket.emit('c', [WHICH_STORY, STORY]);
 
@@ -199,14 +198,14 @@ console.log('Server started on port ' + PORT);
 //  Ping initialization
 const spin = schedule.scheduleJob('59 * * * * *', function(){ // Every minute (agressive downspin...)
     console.log('🔃 Spinning...');
-    client_socket.emit('p', '.');
+    checkAliveUsers();
 });
 
 //  Self-client initiailization (spinner)
 client_socket.on('connect', function (socket) {
     console.log('Connected to self socket');
     if(FLAG_SPUN_ONCE == false){
-      const spin = schedule.scheduleJob('*/1 * * * *', function(){ // Every minute (agressive downspin...)
+      const spin = schedule.scheduleJob('59 * * * * *', function(){ // Every minute (agressive downspin...)
           console.log('🔃 Spinning...');
           client_socket.emit('p', '.');
       });
