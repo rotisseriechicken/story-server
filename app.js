@@ -150,6 +150,8 @@ io.on("connect", socket => {
             decrementWaitlist(); 
             var WaitlistedFor = 0; // 0 words waitlist by default
 
+            /*
+
             //  If userlist is over a certain number of people, engage the waitlist respectively
             if(UserList.length >= 2){ // <----- MAKE THIS NUMBER 6 AFTER TESTING #################!!!!!
               if(UserList.length >= 20){
@@ -175,6 +177,8 @@ io.on("connect", socket => {
                 WaitlistedFor = 1;
               }
             }
+
+            */
 
             //  Add to story
             STORY.push(WORD_OBJECT);
