@@ -30,7 +30,7 @@ const schedule = require('node-schedule');
  *            CONTENT:  [The number of the current story,  The current story array, The server version]
  *
  *      +  -  Server submitted word to client. (EMITTED TO ALL!)
- *            CONTENT:  {The word object containing the w packet's word as a string}
+ *            CONTENT:  [{The word object containing the w packet's word as a string}, waitlist time]
  *
  *      f  -  Server stating the story is finished and moving onto the next one. (EMITTED TO ALL!)
  *            CONTENT:  The number of the new story as an integer.
@@ -143,13 +143,9 @@ io.on("connect", socket => {
               votes: 0
             }
 
-            //  Add to story
-            STORY.push(WORD_OBJECT);
-            io.emit('+', WORD_OBJECT);
-            console.log(word);
-
             //  Decrement the waitlist for users on it
             decrementWaitlist(); 
+            var WaitlistedFor = 0; // 0 words waitlist by default
 
             //  If userlist is over a certain number of people, engage the waitlist respectively
             if(UserList.length >= 2){ // <----- MAKE THIS NUMBER 6 AFTER TESTING #################!!!!!
@@ -158,19 +154,30 @@ io.on("connect", socket => {
                   if(UserList.length >= 500){
                     if(UserList.length >= 2500){
                       WaitList.push([socket.id, 25]); // 2500+ users ----- 25 word waitlist
+                      WaitlistedFor = 25;
                     } else {
                       WaitList.push([socket.id, 10]); // 500-2499 users -- 10 word waitlist
+                      WaitlistedFor = 10;
                     }
                   } else {
-                    WaitList.push([socket.id, 10]); // 100-499 users ----- 4 word waitlist
+                    WaitList.push([socket.id, 4]); // 100-499 users ----- 4 word waitlist
+                    WaitlistedFor = 4;
                   }
                 } else {
                   WaitList.push([socket.id, 2]); // 20-99 users ---------- 2 word waitlist
+                  WaitlistedFor = 2;
                 }
               } else {
                 WaitList.push([socket.id, 1]); // 6-19 users ------------- 1 word waitlist
+                WaitlistedFor = 1;
               }
             }
+
+            //  Add to story
+            STORY.push(WORD_OBJECT);
+            socket.broadcast.emit('+', [WORD_OBJECT]);
+            socket.emit('+', [WORD_OBJECT, WaitlistedFor]);
+            console.log(word);
 
             //  if story reaches 100 words, emit the Finished message
             if(STORY.length == 100){
