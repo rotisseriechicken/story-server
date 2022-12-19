@@ -146,7 +146,7 @@ io.on("connect", socket => {
 
             //  Add to story
             STORY.push(WORD_OBJECT);
-            io.emit('+', word);
+            io.emit('+', WORD_OBJECT);
             console.log(word);
 
             //  If userlist is over a certain number of people, engage the waitlist respectively
