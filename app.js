@@ -210,7 +210,7 @@ console.log('Server started on port ' + PORT);
 
 //  Ping initialization
 const spin = schedule.scheduleJob('59 * * * * *', function(){ // Every minute (agressive downspin...)
-    console.log('🔃 Spinning...');
+    console.log('Culling dead users...');
     checkAliveUsers();
 });
 
@@ -224,4 +224,7 @@ client_socket.on('connect', function (socket) {
       });
       FLAG_SPUN_ONCE = true;
     }
+});
+client_socket.on("q", (data) => { // spin alive response
+  client_socket.emit('A', '!');
 });
