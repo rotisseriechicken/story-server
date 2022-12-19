@@ -197,7 +197,7 @@ io.listen(PORT); // Listen on server-designated port
 console.log('Server started on port ' + PORT);
 
 //  Ping initialization
-const spin = schedule.scheduleJob('*/1 * * * *', function(){ // Every minute (agressive downspin...)
+const spin = schedule.scheduleJob('59 * * * * *', function(){ // Every minute (agressive downspin...)
     console.log('🔃 Spinning...');
     client_socket.emit('p', '.');
 });
