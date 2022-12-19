@@ -93,8 +93,8 @@ function checkAliveUsers(){
       if (err) {
         // client considered disconnected
         var DISCONNECTED_USER = USER.id;
-        UserList.splice(UserList.findIndex(elem => elem.id === USER.id), 1);
-        console.log('User ' + DISCONNECTED_USER + ' disconnected (' + UserList.length + ' connected)');
+        UserList.splice(UserList.findIndex(elem => elem[0] === USER[0]), 1);
+        console.log('X<-- User ' + DISCONNECTED_USER + ' disconnected (' + UserList.length + ' connected)');
       }
     });
   }
@@ -123,8 +123,8 @@ function validateWord(word){
 io.on("connect", socket => {
 
     //  On new client connecting to server
-    UserList.push(socket);
-    console.log('User ' + socket.id + ' disconnected (' + UserList.length + ' connected)');
+    UserList.push([socket.id]);
+    console.log('O--> User ' + socket.id + ' connected (' + UserList.length + ' connected)');
     socket.emit('c', [WHICH_STORY, STORY]);
 
     //  On new word from a submitter
@@ -148,24 +148,27 @@ io.on("connect", socket => {
             io.emit('+', WORD_OBJECT);
             console.log(word);
 
+            //  Decrement the waitlist for users on it
+            decrementWaitlist(); 
+
             //  If userlist is over a certain number of people, engage the waitlist respectively
             if(UserList.length >= 2){ // <----- MAKE THIS NUMBER 6 AFTER TESTING #################!!!!!
               if(UserList.length >= 20){
                 if(UserList.length >= 100){
                   if(UserList.length >= 500){
                     if(UserList.length >= 2500){
-                      WaitList.push(socket.id, 25); // 2500+ users ----- 25 word waitlist
+                      WaitList.push([socket.id, 25]); // 2500+ users ----- 25 word waitlist
                     } else {
-                      WaitList.push(socket.id, 10); // 500-2499 users -- 10 word waitlist
+                      WaitList.push([socket.id, 10]); // 500-2499 users -- 10 word waitlist
                     }
                   } else {
-                    WaitList.push(socket.id, 10); // 100-499 users ----- 4 word waitlist
+                    WaitList.push([socket.id, 10]); // 100-499 users ----- 4 word waitlist
                   }
                 } else {
-                  WaitList.push(socket.id, 2); // 20-99 users ---------- 2 word waitlist
+                  WaitList.push([socket.id, 2]); // 20-99 users ---------- 2 word waitlist
                 }
               } else {
-                WaitList.push(socket.id, 1); // 6-19 users ------------- 1 word waitlist
+                WaitList.push([socket.id, 1]); // 6-19 users ------------- 1 word waitlist
               }
             }
 
