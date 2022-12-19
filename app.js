@@ -1,5 +1,5 @@
 //  Initializing socket server architecture
-const options = { cors: { origin: "*" }};
+const options = { cors: { origin: "rotisseriechicken.world" }};
 const io = require("socket.io")(options);
 const PORT = process.env.PORT || 3000;
 
@@ -114,8 +114,19 @@ function decrementWaitlist(){
 
 // #######################################################################################
 //  Client function parity
-function validateWord(word){
-  return true;
+function validateWord(word){ // Input word, assumed at this point to be a string
+  if(word != ''){
+    return true; // word has substance
+  } else {
+    return false; // word is nothing; reject it
+  }
+}
+
+function HTMLcleanString(UNSAFE_STRING){
+  var NEW_STRING = UNSAFE_STRING.trim();
+  NEW_STRING = NEW_STRING.replaceAll('<','​&lt;')
+                         .replaceAll('>','​&gt;');
+  return NEW_STRING;
 }
 
 
@@ -125,22 +136,32 @@ function validateWord(word){
 io.on("connect", socket => {
 
     //  On new client connecting to server
+    console.log('O--> User ' + socket.id + ' connected (' + UserList.length + ' connected)');
     UserList.push(socket.id); // Add to list of connected users
     UserObject[socket.id] = socket; // Add pointer to object referenced by array
-    console.log('O--> User ' + socket.id + ' connected (' + UserList.length + ' connected)');
     socket.emit('c', [WHICH_STORY, STORY]);
 
     //  On new word from a submitter
     socket.on('w', (word) => { //  Update story--and emit new entry--if this submission passes inspection
 
+        var CLEANWORD = '';
+
+        try{
+          if (typeof word === 'string' || word instanceof String){
+            CLEANWORD = HTMLcleanString(word); // if user submitted a string, clean it first
+          } // otherwise, do nothing; the CLEANWORD string will be empty, and therefore will fail
+        } catch (e){
+          console.log('Word error caught (possibly malicious submission): ', e);
+        }
+
         var WaitListInd = WaitList.findIndex(elem => elem[0] === socket.id);
         if(WaitListInd == -1){ // If user is not on the waitlist,
 
-          var VALID = validateWord(word);
+          var VALID = validateWord(CLEANWORD);
           if(VALID){ // and the word they submitted is valid, then submit the word
 
             var WORD_OBJECT = {
-              word: word,
+              word: CLEANWORD,
               by: socket.id,
               at: Date.now(),
               votes: 0
@@ -184,7 +205,7 @@ io.on("connect", socket => {
             STORY.push(WORD_OBJECT);
             socket.broadcast.emit('+', [WORD_OBJECT]);
             socket.emit('+', [WORD_OBJECT, WaitlistedFor]);
-            console.log(word);
+            console.log(CLEANWORD);
 
             //  if story reaches 100 words, emit the Finished message
             if(STORY.length == 100){
