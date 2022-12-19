@@ -205,11 +205,11 @@ const spin = schedule.scheduleJob('59 * * * * *', function(){ // Every minute (a
 //  Self-client initiailization (spinner)
 client_socket.on('connect', function (socket) {
     console.log('Connected to self socket');
-    if(FLAG_SPUN_INIT == false){
+    if(FLAG_SPUN_ONCE == false){
       const spin = schedule.scheduleJob('*/1 * * * *', function(){ // Every minute (agressive downspin...)
           console.log('🔃 Spinning...');
           client_socket.emit('p', '.');
       });
-      FLAG_SPUN_INIT = true;
+      FLAG_SPUN_ONCE = true;
     }
 });
