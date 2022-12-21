@@ -142,9 +142,9 @@ function HTMLcleanString(UNSAFE_STRING){
 io.on("connect", socket => {
 
     //  On new client connecting to server
-    console.log('O--> User ' + socket.id + ' connected (' + UserList.length + ' connected)');
     UserList.push(socket.id); // Add to list of connected users
     UserObject[socket.id] = socket; // Add pointer to object referenced by array
+    console.log('O--> User ' + socket.id + ' connected (' + UserList.length + ' connected)');
     socket.emit('c', [WHICH_STORY, STORY]);
 
     //  On new word from a submitter
