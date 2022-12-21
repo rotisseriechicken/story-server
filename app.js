@@ -77,6 +77,8 @@ const schedule = require('node-schedule');
 var VERSION = 1; // Server's version; Used to validate major changes with the client
 var UserList = []; // List of connected users, and their user objects; Used to track cooldowns.
 var UserObject = {}; // Object of pointers to connected users
+
+var ActiveUserList = []; // List of all user IDs that have recently submitted a word
 var WaitList = []; // List of users that are required to wait before submitting further entries.
 
 var STORY = []; // The story data so far
@@ -88,7 +90,7 @@ var FLAG_SPUN_ONCE = false; // If true, the spinner has begun
 
 // #######################################################################################
 //  Server functions
-function checkAliveUsers(){
+function checkUsers(){
   for(var USER of UserList){
     UserObject[USER].timeout(15000).emit("q", (err) => {
       if (err) {
@@ -100,6 +102,10 @@ function checkAliveUsers(){
       }
     });
   }
+}
+
+function checkActiveUsers(){
+
 }
 
 function decrementWaitlist(){
@@ -234,9 +240,10 @@ io.listen(PORT); // Listen on server-designated port
 console.log('Server started on port ' + PORT);
 
 //  Ping initialization
-const spin = schedule.scheduleJob('59 * * * * *', function(){ // Every minute (agressive downspin...)
-    console.log('Culling dead users...');
-    checkAliveUsers();
+const deadusers = schedule.scheduleJob('59 * * * * *', function(){ // Every minute (agressive downspin...)
+    console.log('Updating user count...');
+    checkUsers();
+    checkActiveUsers();
 });
 
 //  Self-client initiailization (spinner)
