@@ -145,7 +145,7 @@ io.on("connect", socket => {
     UserList.push(socket.id); // Add to list of connected users
     UserObject[socket.id] = socket; // Add pointer to object referenced by array
     console.log('O--> User ' + socket.id + ' connected (' + UserList.length + ' connected)');
-    socket.emit('c', [WHICH_STORY, STORY]);
+    socket.emit('c', [WHICH_STORY, STORY, VERSION]);
 
     //  On new word from a submitter
     socket.on('w', (word) => { //  Update story--and emit new entry--if this submission passes inspection
