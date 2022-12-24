@@ -130,11 +130,6 @@ function currentlyOnline(){
   return Object.keys(UserObject).length;
 }
 
-function updatePrognostications(socketpointer){
-  socketpointer.broadcast.emit('A', [1, Prognostication_Delta]); // mode 1 for update
-  Prognostication_Delta = [];
-}
-
 
 
 // #######################################################################################
@@ -167,7 +162,7 @@ io.on("connect", socket => {
       GAME_MODE_NOW = 1; // Cutscene
     }
     socket.emit('c', [WHICH_STORY, STORY, VERSION, ITERATIVE_UUID, GAME_MODE_NOW, [0,getFullUserdata()]]);
-    socket.broadcast.emit('J', ITERATIVE_UUID); // emit to all but joiner that a new client has joined
+    socket.broadcast.emit('J', [ITERATIVE_UUID]); // emit to all but joiner that a new client has joined
     console.log('O--> User ' + socket.id + ' (UUID '+ITERATIVE_UUID+') connected (' + currentlyOnline() + ' connected)');
     ITERATIVE_UUID++; // iterate UUID list
 
@@ -185,7 +180,8 @@ io.on("connect", socket => {
       var LIMITED_WORD = HTMLcleanString(word.substring(0,35));
       UserObject[socket.id][2] = LIMITED_WORD;
       Prognostication_Delta.push([UserObject[socket.id][1], UserObject[socket.id][2]]);
-      updatePrognostications(socket);
+      socket.broadcast.emit('A', [1, Prognostication_Delta]); // mode 1 for update
+      Prognostication_Delta = [];
     });
 
     //  On new word from a submitter
