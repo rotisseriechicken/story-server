@@ -136,9 +136,9 @@ function currentlyOnline(){
 //  Client function parity
 function VALIDATOR(word){ // Input word, assumed at this point to be a string
   if(word != ''){
-    return true; // word has substance
+    return [true]; // word has substance
   } else {
-    return false; // word is nothing; reject it
+    return [false]; // word is nothing; reject it
   }
 }
 
@@ -169,7 +169,7 @@ io.on("connect", socket => {
 
     //  On client disconnecting from server for any reason
     socket.on("disconnect", (reason) => {
-      var DISCONNECTED_USER = [socket.id, UserObject[socket.id][1]];
+      var DISCONNECTED_USER = [socket.id, parseInt(UserObject[socket.id][1])];
       socket.broadcast.emit('L', DISCONNECTED_USER[1]); // emit to all but joiner that this client left
       delete UserObject[socket.id];
       // UserList.splice(UserList.findIndex(elem => elem === USER), 1);
@@ -181,7 +181,8 @@ io.on("connect", socket => {
       var LIMITED_WORD = HTMLcleanString(word.substring(0,35));
       UserObject[socket.id][2] = LIMITED_WORD;
       Prognostication_Delta.push([UserObject[socket.id][1], UserObject[socket.id][2]]);
-      socket.broadcast.emit('A', [1, Prognostication_Delta]); // mode 1 for update
+      io.emit('A', [1, Prognostication_Delta]); // mode 1 for update
+      // socket.broadcast.emit('A', [1, Prognostication_Delta]); // mode 1 for update
       Prognostication_Delta = [];
     });
 
@@ -203,15 +204,15 @@ io.on("connect", socket => {
 
           if(STORY_ACTIVATE_TIME <= Date.now()){
 
-            var VALID = VALIDATOR(CLEANWORD);
+            var VALID = VALIDATOR(CLEANWORD)[0];
             if(VALID){ // and the word they submitted is valid, then submit the word
 
               var WORD_OBJECT = {
                 word: CLEANWORD,
-                by: UserObject[socket.id][1], // UUID
+                by: parseInt(UserObject[socket.id][1]),
                 at: Date.now(),
                 votes: 0
-              }
+              };
 
               //  Decrement the waitlist for users on it
               decrementWaitlist(); 
