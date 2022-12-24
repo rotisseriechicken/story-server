@@ -161,7 +161,8 @@ io.on("connect", socket => {
     if(Date.now() < STORY_ACTIVATE_TIME){
       GAME_MODE_NOW = 1; // Cutscene
     }
-    socket.emit('c', [WHICH_STORY, STORY, VERSION, ITERATIVE_UUID, GAME_MODE_NOW, [0,getFullUserdata()]]);
+    var TUSERDATA = getFullUserdata();
+    socket.emit('c', [WHICH_STORY, STORY, VERSION, ITERATIVE_UUID, GAME_MODE_NOW, [0, TUSERDATA]]);
     socket.broadcast.emit('J', [ITERATIVE_UUID]); // emit to all but joiner that a new client has joined
     console.log('O--> User ' + socket.id + ' (UUID '+ITERATIVE_UUID+') connected (' + currentlyOnline() + ' connected)');
     ITERATIVE_UUID++; // iterate UUID list
