@@ -1,5 +1,5 @@
 //  Initializing socket server architecture
-const options = { cors: { origin: ["https://rotisseriechicken.world", "https://story.rotisseriechicken.world"] }};
+const options = { cors: { origin: "https://story.rotisseriechicken.world" }};
 const io = require("socket.io")(options);
 const PORT = process.env.PORT || 3000;
 
