@@ -170,7 +170,7 @@ io.on("connect", socket => {
     //  On client disconnecting from server for any reason
     socket.on("disconnect", (reason) => {
       var DISCONNECTED_USER = [socket.id, parseInt(UserObject[socket.id][1])];
-      socket.broadcast.emit('L', DISCONNECTED_USER[1]); // emit to all but joiner that this client left
+      socket.broadcast.emit('L', [DISCONNECTED_USER[1]]); // emit to all but joiner that this client left
       delete UserObject[socket.id];
       // UserList.splice(UserList.findIndex(elem => elem === USER), 1);
       console.log('X<-- User ' + DISCONNECTED_USER[0] + ' (UUID '+DISCONNECTED_USER[1]+') disconnected (' + currentlyOnline() + ' connected)');
