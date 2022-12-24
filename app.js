@@ -186,7 +186,7 @@ io.on("connect", socket => {
       UserObject[socket.id][2] = LIMITED_WORD;
       Prognostication_Delta.push([UserObject[socket.id][1], UserObject[socket.id][2]]);
       updatePrognostications(socket);
-    }
+    });
 
     //  On new word from a submitter
     socket.on('w', (word) => { //  Update story--and emit new entry--if this submission passes inspection
