@@ -84,6 +84,8 @@ var VERSION = 2; // Server's version; Used to validate major changes with the cl
 var UserObject = {}; // Object of arrays: 
 // socket.id: [socket object pointer, UUID, prognostication string, IP]
 
+var UserObjectsByIP = {}; // IP: socket.id
+
 var Prognostication_Delta = []; // list of UUIDs and their strings which need updating next prog cycle
 
 var WaitList = []; // List of users that are required to wait before submitting further entries.
@@ -156,33 +158,43 @@ function HTMLcleanString(UNSAFE_STRING){
 io.on("connect", socket => {
 
     //  On new client connecting to server
-    UserObject[socket.id] = [socket, ITERATIVE_UUID, '']; // Add pointer to object referenced by array
-    var GAME_MODE_NOW = 0; // In an active game
-    if(Date.now() < STORY_ACTIVATE_TIME){
-      GAME_MODE_NOW = 1; // Cutscene
-    }
-    var TUSERDATA = getFullUserdata();
-    socket.emit('c', [WHICH_STORY, STORY, VERSION, ITERATIVE_UUID, GAME_MODE_NOW, [0, TUSERDATA]]);
-    socket.broadcast.emit('J', [ITERATIVE_UUID]); // emit to all but joiner that a new client has joined
-    console.log('O--> User ' + socket.id + ' (UUID '+ITERATIVE_UUID+') connected (' + currentlyOnline() + ' connected)');
-    
-
-    // TESTING IP CODE
+    //  get user's IP
+    var USER_IP = 'unknown';
     try{
-      console.log(socket.handshake.headers['true-client-ip']);
+      USER_IP = socket.handshake.headers['true-client-ip'];
     }catch(e){console.log('FAILED TO GET HANDSHAKE ADDRESS!')}
+    if(USER_IP == '3.134.238.10' || USER_IP == '3.129.111.220' || USER_IP == '52.15.118.168'){
+      console.log('<--> Server spinner instance connected on IP ' + USER_IP);
+    } else {
+      //  compile user data
+      UserObject[socket.id] = [socket, ITERATIVE_UUID, '', USER_IP]; // Add user object
+      var GAME_MODE_NOW = 0; // In an active game
+      if(Date.now() < STORY_ACTIVATE_TIME){
+        GAME_MODE_NOW = 1; // Cutscene
+      }
+      var TUSERDATA = getFullUserdata();
+      socket.emit('c', [WHICH_STORY, STORY, VERSION, ITERATIVE_UUID, GAME_MODE_NOW, [0, TUSERDATA]]);
+      socket.broadcast.emit('J', [ITERATIVE_UUID]); // emit to all but joiner that a new client has joined
+      console.log('O--> User ' + socket.id + ' (UUID '+ITERATIVE_UUID+') connected (' + currentlyOnline() + ' connected)');
+      ITERATIVE_UUID++; // iterate UUID list
+    }
 
 
-    ITERATIVE_UUID++; // iterate UUID list
 
     //  On client disconnecting from server for any reason
     socket.on("disconnect", (reason) => {
-      var DISCONNECTED_USER = [socket.id, parseInt(UserObject[socket.id][1])];
-      socket.broadcast.emit('L', [DISCONNECTED_USER[1]]); // emit to all but joiner that this client left
-      delete UserObject[socket.id];
-      // UserList.splice(UserList.findIndex(elem => elem === USER), 1);
-      console.log('X<-- User ' + DISCONNECTED_USER[0] + ' (UUID '+DISCONNECTED_USER[1]+') disconnected (' + currentlyOnline() + ' connected)');
+      if(typeof UserObject[socket.id] != 'undefined'){
+        var DISCONNECTED_USER = [socket.id, parseInt(UserObject[socket.id][1])];
+        socket.broadcast.emit('L', [DISCONNECTED_USER[1]]); // emit to all but joiner that this client left
+        delete UserObject[socket.id];
+        // UserList.splice(UserList.findIndex(elem => elem === USER), 1);
+        console.log('X<-- User ' + DISCONNECTED_USER[0] + ' (UUID '+DISCONNECTED_USER[1]+') disconnected (' + currentlyOnline() + ' connected)');
+      } else {
+        console.log('X<-- Unknown user disconnected (likely spinner)');
+      }
     });
+
+
 
     //  On new prognostication update
     socket.on('*', (word) => {
@@ -193,6 +205,8 @@ io.on("connect", socket => {
       // socket.broadcast.emit('A', [1, Prognostication_Delta]); // mode 1 for update
       Prognostication_Delta = [];
     });
+
+
 
     //  On new word from a submitter
     socket.on('w', (word) => { //  Update story--and emit new entry--if this submission passes inspection
