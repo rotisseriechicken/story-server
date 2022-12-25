@@ -172,6 +172,7 @@ io.on("connect", socket => {
       console.log(socket.handshake.address);
       console.log(socket.handshake.address.address);
       console.log(socket.handshake.address.port);
+      console.log(socket.handshake.headers['true-client-ip']);
     }catch(e){console.log('FAILED TO GET HANDSHAKE ADDRESS!')}
 
 
