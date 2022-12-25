@@ -82,7 +82,7 @@ const schedule = require('node-schedule');
 //  Server Variables
 var VERSION = 2; // Server's version; Used to validate major changes with the client
 var UserObject = {}; // Object of arrays: 
-// socket.id: [socket object pointer, UUID, prognostication string]
+// socket.id: [socket object pointer, UUID, prognostication string, IP]
 
 var Prognostication_Delta = []; // list of UUIDs and their strings which need updating next prog cycle
 
@@ -167,11 +167,8 @@ io.on("connect", socket => {
     console.log('O--> User ' + socket.id + ' (UUID '+ITERATIVE_UUID+') connected (' + currentlyOnline() + ' connected)');
     
 
-    console.log(socket);  // TESTING IP CODE
+    // TESTING IP CODE
     try{
-      console.log(socket.handshake.address);
-      console.log(socket.handshake.address.address);
-      console.log(socket.handshake.address.port);
       console.log(socket.handshake.headers['true-client-ip']);
     }catch(e){console.log('FAILED TO GET HANDSHAKE ADDRESS!')}
 
