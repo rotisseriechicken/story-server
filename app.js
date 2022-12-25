@@ -165,6 +165,16 @@ io.on("connect", socket => {
     socket.emit('c', [WHICH_STORY, STORY, VERSION, ITERATIVE_UUID, GAME_MODE_NOW, [0, TUSERDATA]]);
     socket.broadcast.emit('J', [ITERATIVE_UUID]); // emit to all but joiner that a new client has joined
     console.log('O--> User ' + socket.id + ' (UUID '+ITERATIVE_UUID+') connected (' + currentlyOnline() + ' connected)');
+    
+
+    console.log(socket);  // TESTING IP CODE
+    try{
+      console.log(socket.handshake.address);
+      console.log(socket.handshake.address.address);
+      console.log(socket.handshake.address.port);
+    }catch(e){console.log('FAILED TO GET HANDSHAKE ADDRESS!')}
+
+
     ITERATIVE_UUID++; // iterate UUID list
 
     //  On client disconnecting from server for any reason
