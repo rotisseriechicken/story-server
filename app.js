@@ -177,6 +177,9 @@ function submitStory(STORY_OBJECT, IO_REFERENCE){
                 STORY = [];
                 IO_REFERENCE.emit('f', [WHICH_STORY, (Date.now() + CUTSCENE_TIME)]);
               }
+          } else {
+            console('STORY SUBMISSION FAILED! re-attempting...');
+            submitStory(STORY_OBJECT, IO_REFERENCE);
           }
       }
   );
