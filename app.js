@@ -346,7 +346,7 @@ io.on("connect", socket => {
                   if(STORY.length == 100){
                     //  Submit story to Chicken HQ, then on successful submission, start next game
                     console.log('>>> Story completed, submitting...');
-                    submitStory(STORY, io);
+                    submitStory(io);
                   }
 
                 } else { // Invalid word
