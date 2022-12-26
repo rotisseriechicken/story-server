@@ -165,10 +165,10 @@ function currentlyOnline(){
 }
 
 function submitStory(IO_REFERENCE){
-  const FORM_DATA = {story: STORY, whichStory: WHICH_STORY, uploaded: Date.now(), storyServerVersion: VERSION};
+  const FORM_DATA = JSON.stringify({story: STORY, whichStory: WHICH_STORY, uploaded: Date.now(), storyServerVersion: VERSION});
   request.post({
       url: 'https://rotisseriechicken.world/story/stories/%5EcommitStoryContentAndIncrement.php',
-      formData: FORM_DATA
+      form: FORM_DATA
     },
     function (error, response, body) {
       if (!error && response.statusCode == 200) {
