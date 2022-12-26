@@ -3,12 +3,37 @@ const options = { cors: { origin: ["wss://rotisseriechicken.world", "wss://story
 const io = require("socket.io")(options);
 const PORT = process.env.PORT || 3000;
 
+//  Initializing HTTP GET client
+const request = require('request');
+
 //  Initializing socket client
 var client_io = require("socket.io-client");
 var client_socket = client_io.connect('https://story-server.onrender.com/', {reconnect: true});
 
 //  Initializing spinner
 const schedule = require('node-schedule');
+
+// Static outbound server IPs
+var SERVER_IPS = ['3.134.238.10', '3.129.111.220', '52.15.118.168'];
+
+//  Prerequisite variables
+var WHICH_STORY = 0;
+var SERVER_INITIALIZED = false;
+var STORY_INDEX_RETRIEVED = false;
+
+//  Require a request of the most recent story from Chicken headquarters
+function requestWhichStory(){
+  request('https://rotisseriechicken.world/story/stories/%5ESTORY_INDEX.txt', function (error, response, body) {
+    if(error){
+      requestWhichStory(); // continue to force-check until the value was retrieved successfully
+    } else {
+      console.log('WHICH_STORY retrieved: ' + parseInt(body) + '. ', response && response.statusCode);
+      WHICH_STORY = parseInt(body); //  use the HTML body to set the WHICH_STORY value
+      STORY_INDEX_RETRIEVED = true;
+      SERVER_INITIALIZED = true;
+    }
+  });
+}
 
 /*
  *    Server architecture explanation
@@ -80,7 +105,7 @@ const schedule = require('node-schedule');
 
 // #######################################################################################
 //  Server Variables
-var VERSION = 2; // Server's version; Used to validate major changes with the client
+var VERSION = 3; // Server's version; Used to validate major changes with the client
 var UserObject = {}; // Object of arrays: 
 // socket.id: [socket object pointer, UUID, prognostication string, IP]
 
@@ -91,7 +116,6 @@ var Prognostication_Delta = []; // list of UUIDs and their strings which need up
 var WaitList = []; // List of users that are required to wait before submitting further entries.
 
 var STORY = []; // The story data so far
-var WHICH_STORY = 0; // The number of story currently in progress
 var STORY_ACTIVATE_TIME = Date.now(); // The time at which the next story will begin.
 
 var CUTSCENE_TIME = 0; // 15000; // Server-enforced time between games (cutscene duration!)
@@ -132,6 +156,24 @@ function currentlyOnline(){
   return Object.keys(UserObject).length;
 }
 
+function submitStory(STORY_OBJECT, IO_REFERENCE){
+  request.post(
+      'https://rotisseriechicken.world/story/stories/%5EcommitStoryContentAndIncrement.php',
+      STORY_OBJECT,
+      function (error, response, body) {
+          if (!error && response.statusCode == 200) {
+            console.log('Story submission returned 200 status');
+              if(body == 'ok'){
+                console.log('STORY #' + WHICH_STORY + ' successfully submitted! Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+CUTSCENE_TIME+'...');
+                WHICH_STORY++;
+                STORY = [];
+                IO_REFERENCE.emit('f', [WHICH_STORY, (Date.now() + CUTSCENE_TIME)]);
+              }
+          }
+      }
+  );
+}
+
 
 
 // #######################################################################################
@@ -163,7 +205,7 @@ io.on("connect", socket => {
     try{
       USER_IP = socket.handshake.headers['true-client-ip'];
     }catch(e){console.log('FAILED TO GET HANDSHAKE ADDRESS!')}
-    if(USER_IP == '3.134.238.10' || USER_IP == '3.129.111.220' || USER_IP == '52.15.118.168'){
+    if(SERVER_IPS.includes(USER_IP)){
       console.log('<--> Server spinner instance connected on IP ' + USER_IP);
     } else {
       //  compile user data
@@ -213,88 +255,98 @@ io.on("connect", socket => {
 
         var CLEANWORD = '';
 
-        try{
-          if (typeof word === 'string' || word instanceof String){
-            CLEANWORD = HTMLcleanString(word); // if user submitted a string, clean it first
-          } // otherwise, do nothing; the CLEANWORD string will be empty, and therefore will fail
-        } catch (e){
-          console.log('Word error caught (possibly malicious submission): ', e);
-        }
+        if(SERVER_INITIALIZED == true){
 
-        var WaitListInd = WaitList.findIndex(elem => elem[0] === socket.id);
-        if(WaitListInd == -1){ // If user is not on the waitlist,
+          if(STORY.length < 100){
 
-          if(STORY_ACTIVATE_TIME <= Date.now()){
+            try{
+              if (typeof word === 'string' || word instanceof String){
+                CLEANWORD = HTMLcleanString(word); // if user submitted a string, clean it first
+              } // otherwise, do nothing; the CLEANWORD string will be empty, and therefore will fail
+            } catch (e){
+              console.log('Word error caught (possibly malicious submission): ', e);
+            }
 
-            var VALID = VALIDATOR(CLEANWORD)[0];
-            if(VALID){ // and the word they submitted is valid, then submit the word
+            var WaitListInd = WaitList.findIndex(elem => elem[0] === socket.id);
+            if(WaitListInd == -1){ // If user is not on the waitlist,
 
-              var WORD_OBJECT = {
-                word: CLEANWORD,
-                by: parseInt(UserObject[socket.id][1]),
-                at: Date.now(),
-                votes: 0
-              };
+              if(STORY_ACTIVATE_TIME <= Date.now()){
 
-              //  Decrement the waitlist for users on it
-              decrementWaitlist(); 
-              var WaitlistedFor = 0; // 0 words waitlist by default
+                var VALID = VALIDATOR(CLEANWORD)[0];
+                if(VALID){ // and the word they submitted is valid, then submit the word
 
-              /*
+                  var WORD_OBJECT = {
+                    word: CLEANWORD,
+                    by: parseInt(UserObject[socket.id][1]),
+                    at: Date.now(),
+                    votes: 0
+                  };
 
-              //  If userlist is over a certain number of people, engage the waitlist respectively
-              if(currentlyOnline() >= 2){ // <----- MAKE THIS NUMBER 6 AFTER TESTING #################!!!!!
-                if(currentlyOnline() >= 20){
-                  if(currentlyOnline() >= 100){
-                    if(currentlyOnline() >= 500){
-                      if(currentlyOnline() >= 2500){
-                        WaitList.push([socket.id, 25]); // 2500+ users ----- 25 word waitlist
-                        WaitlistedFor = 25;
+                  //  Decrement the waitlist for users on it
+                  decrementWaitlist(); 
+                  var WaitlistedFor = 0; // 0 words waitlist by default
+
+                  /*
+
+                  //  If userlist is over a certain number of people, engage the waitlist respectively
+                  if(currentlyOnline() >= 2){ // <----- MAKE THIS NUMBER 6 AFTER TESTING #################!!!!!
+                    if(currentlyOnline() >= 20){
+                      if(currentlyOnline() >= 100){
+                        if(currentlyOnline() >= 500){
+                          if(currentlyOnline() >= 2500){
+                            WaitList.push([socket.id, 25]); // 2500+ users ----- 25 word waitlist
+                            WaitlistedFor = 25;
+                          } else {
+                            WaitList.push([socket.id, 10]); // 500-2499 users -- 10 word waitlist
+                            WaitlistedFor = 10;
+                          }
+                        } else {
+                          WaitList.push([socket.id, 4]); // 100-499 users ----- 4 word waitlist
+                          WaitlistedFor = 4;
+                        }
                       } else {
-                        WaitList.push([socket.id, 10]); // 500-2499 users -- 10 word waitlist
-                        WaitlistedFor = 10;
+                        WaitList.push([socket.id, 2]); // 20-99 users ---------- 2 word waitlist
+                        WaitlistedFor = 2;
                       }
                     } else {
-                      WaitList.push([socket.id, 4]); // 100-499 users ----- 4 word waitlist
-                      WaitlistedFor = 4;
+                      WaitList.push([socket.id, 1]); // 6-19 users ------------- 1 word waitlist
+                      WaitlistedFor = 1;
                     }
-                  } else {
-                    WaitList.push([socket.id, 2]); // 20-99 users ---------- 2 word waitlist
-                    WaitlistedFor = 2;
                   }
-                } else {
-                  WaitList.push([socket.id, 1]); // 6-19 users ------------- 1 word waitlist
-                  WaitlistedFor = 1;
+
+                  */
+
+                  //  Add to story
+                  STORY.push(WORD_OBJECT);
+                  socket.broadcast.emit('+', [WORD_OBJECT]);
+                  socket.emit('+', [WORD_OBJECT, WaitlistedFor]);
+                  console.log('UUID ' + UserObject[socket.id][1] + ':  ' + CLEANWORD);
+
+                  UserObject[socket.id][2] = '';
+
+                  //  if story reaches 100 words, emit the Finished message
+                  if(STORY.length == 100){
+                    //  Submit story to Chicken HQ, then on successful submission, start next game
+                    console.log('>>> Story completed, submitting...');
+                    submitStory(STORY, io);
+                  }
+
+                } else { // Invalid word
+                  socket.emit('r', [0, 0]);
                 }
+              } else { // The next story has not yet begun
+              socket.emit('r', [2, 0]);
               }
-
-              */
-
-              //  Add to story
-              STORY.push(WORD_OBJECT);
-              socket.broadcast.emit('+', [WORD_OBJECT]);
-              socket.emit('+', [WORD_OBJECT, WaitlistedFor]);
-              console.log('UUID ' + UserObject[socket.id][1] + ':  ' + CLEANWORD);
-
-              UserObject[socket.id][2] = '';
-
-              //  if story reaches 100 words, emit the Finished message
-              if(STORY.length == 100){
-                WHICH_STORY++;
-                //  Insert line which calls function that submits the story to RCW endpoint here!
-                STORY = [];
-                console.log('>>> Story completed, beginning story ' + WHICH_STORY);
-                io.emit('f', [WHICH_STORY, (Date.now() + CUTSCENE_TIME)]);
-              }
-
-            } else { // Invalid word
-              socket.emit('r', [0, 0]);
+            } else { // User waitlisted
+              socket.emit('r', [1, WaitList[WaitListInd][1]]);
             }
-          } else { // The next story has not yet begun
-          socket.emit('r', [2, 0]);
+          } else { // story is 100 words or longer
+            socket.emit('r', [4, undefined]);
           }
-        } else { // User waitlisted
-          socket.emit('r', [1, WaitList[WaitListInd][1]]);
+        } else { // Server is not yet fully initialized
+          if(STORY_INDEX_RETRIEVED == false){
+            socket.emit('r', [3, undefined]); // The last Story index has not yet been retrieved
+          }
         }
     });
 
