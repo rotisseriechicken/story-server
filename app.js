@@ -164,29 +164,31 @@ function currentlyOnline(){
   return Object.keys(UserObject).length;
 }
 
-function submitStory(STORY_OBJECT, IO_REFERENCE){
-  request.post(
-      'https://rotisseriechicken.world/story/stories/%5EcommitStoryContentAndIncrement.php',
-      STORY_OBJECT,
-      function (error, response, body) {
-          if (!error && response.statusCode == 200) {
-            console.log('Story submission returned 200 status');
-            console.log('body:');
-            console.log(body);
-              if(body == 'ok'){
-                console.log('STORY #' + WHICH_STORY + ' successfully submitted! Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+CUTSCENE_TIME+'...');
-                WHICH_STORY++;
-                STORY = [];
-                IO_REFERENCE.emit('f', [WHICH_STORY, (Date.now() + CUTSCENE_TIME)]);
-              } else {
-                console.log('Body DID NOT return "ok"! re-attempting...');
-                submitStory(STORY_OBJECT, IO_REFERENCE);
-              }
+function submitStory(IO_REFERENCE){
+  const FORM_DATA = {story: STORY, whichStory: WHICH_STORY, uploaded: Date.now(), storyServerVersion: VERSION};
+  request.post({
+      url: 'https://rotisseriechicken.world/story/stories/%5EcommitStoryContentAndIncrement.php',
+      formData: FORM_DATA
+    },
+    function (error, response, body) {
+      if (!error && response.statusCode == 200) {
+        console.log('Story submission returned 200 status');
+        console.log('body:');
+        console.log(body);
+          if(body == 'ok'){
+            console.log('STORY #' + WHICH_STORY + ' successfully submitted! Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+CUTSCENE_TIME+'...');
+            WHICH_STORY++;
+            STORY = [];
+            IO_REFERENCE.emit('f', [WHICH_STORY, (Date.now() + CUTSCENE_TIME)]);
           } else {
-            console('STORY SUBMISSION FAILED! re-attempting...');
-            submitStory(STORY_OBJECT, IO_REFERENCE);
+            console.log('Body DID NOT return "ok"! re-attempting...');
+            submitStory(IO_REFERENCE);
           }
+      } else {
+        console('STORY SUBMISSION FAILED! re-attempting...');
+        submitStory(IO_REFERENCE);
       }
+    }
   );
 }
 
