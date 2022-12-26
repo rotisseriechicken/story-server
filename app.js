@@ -17,9 +17,10 @@ const schedule = require('node-schedule');
 var SERVER_IPS = ['3.134.238.10', '3.129.111.220', '52.15.118.168'];
 
 //  Prerequisite variables
-var WHICH_STORY = 0;
-var SERVER_INITIALIZED = false;
-var STORY_INDEX_RETRIEVED = false;
+var WHICH_STORY = 0; // story index
+var SERVER_INITIALIZED = false; // if user submissions can be accepted
+var STORY_INDEX_RETRIEVED = false; // if the story index is synced with Chicken HQ
+var RESUBMIT_WAIT_TIME = 5000; // time to wait before retrying requests
 
 //  Require a request of the most recent story from Chicken headquarters
 function requestWhichStory(){
@@ -34,9 +35,9 @@ function requestWhichStory(){
       console.log(error);
       console.log('BODY:');
       console.log(body);
-      console.log('RESPONSE:');
-      console.log(response);
-      requestWhichStory(); // continue to force-check until the value was retrieved successfully
+      setTimeout(function() {
+        requestWhichStory(); // continue to force-check until the value was retrieved successfully
+      }, RESUBMIT_WAIT_TIME);
     }
   });
 }
@@ -181,11 +182,15 @@ function submitStory(IO_REFERENCE){
             IO_REFERENCE.emit('f', [WHICH_STORY, (Date.now() + CUTSCENE_TIME)]);
           } else {
             console.log('Body DID NOT return "ok"! re-attempting...');
-            submitStory(IO_REFERENCE);
+            setTimeout(function() {
+              submitStory(IO_REFERENCE);
+            }, RESUBMIT_WAIT_TIME);
           }
       } else {
         console('STORY SUBMISSION FAILED! re-attempting...');
-        submitStory(IO_REFERENCE);
+        setTimeout(function() {
+          submitStory(IO_REFERENCE);
+        }, RESUBMIT_WAIT_TIME);
       }
     }
   );
