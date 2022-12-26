@@ -24,18 +24,24 @@ var STORY_INDEX_RETRIEVED = false;
 //  Require a request of the most recent story from Chicken headquarters
 function requestWhichStory(){
   request('https://rotisseriechicken.world/story/stories/%5ESTORY_INDEX.txt', function (error, response, body) {
-    if(error){
-      console.log('WHICH_STORY error!');
-      console.log(error);
-      requestWhichStory(); // continue to force-check until the value was retrieved successfully
-    } else {
+    if(response.statusCode == 200){ // perceived success
       console.log('WHICH_STORY retrieved: ' + parseInt(body) + '. ', response && response.statusCode);
       WHICH_STORY = parseInt(body); //  use the HTML body to set the WHICH_STORY value
       STORY_INDEX_RETRIEVED = true;
       SERVER_INITIALIZED = true;
+    } else {
+      console.log('WHICH_STORY error!');
+      console.log(error);
+      console.log('BODY:');
+      console.log(body);
+      console.log('RESPONSE:');
+      console.log(response);
+      requestWhichStory(); // continue to force-check until the value was retrieved successfully
     }
   });
 }
+
+requestWhichStory(); // Begin initialization of picking up wherever the server left off
 
 /*
  *    Server architecture explanation
