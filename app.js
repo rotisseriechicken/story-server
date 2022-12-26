@@ -25,6 +25,8 @@ var STORY_INDEX_RETRIEVED = false;
 function requestWhichStory(){
   request('https://rotisseriechicken.world/story/stories/%5ESTORY_INDEX.txt', function (error, response, body) {
     if(error){
+      console.log('WHICH_STORY error!');
+      console.log(error);
       requestWhichStory(); // continue to force-check until the value was retrieved successfully
     } else {
       console.log('WHICH_STORY retrieved: ' + parseInt(body) + '. ', response && response.statusCode);
