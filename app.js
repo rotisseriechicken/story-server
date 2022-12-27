@@ -159,14 +159,20 @@ function cleanUsers(){ // Function called each hour to allow users a new "sessio
     if(ConnectionsPerIP[IP] == 0){
       //  Nobody is connected on this IP right now; Consider if any, or all, users need to die
       for(var USER of UserIPs[IP]){ // NOTE: Using the IP property names to iterate the UserIPs object!
-        if(Date.now() - USER[2] > (1000 * 60 * MINIMUM_SESSION_DURATION_MINS)){
-          UUIDs_PURGED.push(USER); // Log deletion
-          delete UserIPs[IP][USER]; // Delete this user
+        if((parseInt(Date.now()) - parseInt(USER[2])) > (1000 * 60 * MINIMUM_SESSION_DURATION_MINS)){
+          var UserArray = Array.from(USER);
+          UUIDs_PURGED.push(UserArray); // Log deletion
+          // clear memory for this user
+          UserIPs[IP][USER] = undefined;
+          delete UserIPs[IP][USER];
         }
       }
       //  If nobody remains on this IP, free the IP entirely
       if(UserIPs[IP].length == 0){
         IPS_PURGED.push(IP);
+        //  clear memory for this IP and user container
+        UserIPs[IP] = undefined;
+        ConnectionsPerIP[IP] = undefined;
         delete UserIPs[IP];
         delete ConnectionsPerIP[IP];
       }
@@ -277,6 +283,7 @@ function getCompressedStory(){
 
 function timeoutSubmission(TO_CHECK){
   if(TO_CHECK == TIMEOUT_ELAPSE_CHECK_NUM){
+    STORY_MODE = 0;
     console.log('>>> Timeout elapsed, submitting story...');
     submitStory(io);
   }
@@ -574,7 +581,7 @@ io.listen(PORT); // Listen on server-designated port
 console.log('Server started on port ' + PORT);
 
 //  Ping initialization
-const deadusers = schedule.scheduleJob('* 0 * * * *', function(){ // Every minute (agressive downspin...)
+const deadusers = schedule.scheduleJob('0 0 * * * *', function(){ // Every minute (agressive downspin...)
     console.log('Re-sessioning old users...');
     cleanUsers();
 });
