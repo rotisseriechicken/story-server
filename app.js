@@ -13,6 +13,9 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 //  Initializing spinner
 const schedule = require('node-schedule');
 
+//  Initialize compression
+var lzutf8 = require('lzutf8');
+
 // Static outbound server IPs
 var SERVER_IPS = ['3.134.238.10', '3.129.111.220', '52.15.118.168'];
 
@@ -24,7 +27,7 @@ var RESUBMIT_WAIT_TIME = 5000; // time to wait before retrying requests
 
 //  Require a request of the most recent story from Chicken headquarters
 function requestWhichStory(){
-  request('https://rotisseriechicken.world/story/stories/%5ESTORY_INDEX.txt', function (error, response, body) {
+  request('https://rotisseriechicken.world/story/stories/api/current', function (error, response, body) {
     if(response.statusCode == 200){ // perceived success
       console.log('WHICH_STORY retrieved: ' + parseInt(body) + '. ', response && response.statusCode);
       WHICH_STORY = parseInt(body); //  use the HTML body to set the WHICH_STORY value
@@ -68,6 +71,12 @@ requestWhichStory(); // Begin initialization of picking up wherever the server l
  *
  *      f  -  Server stating the story is finished and moving onto the next one. (EMITTED TO ALL!)
  *            CONTENT:  [The integer of the new story, The Date.now() UTC time of the next game start]
+ *
+ *      t  -  Server stating it is time to title the story, and a list of users that can title it. (EMITTED TO ALL!)
+ *            CONTENT:  [List of UUIDs which can still submit to the title]
+ *
+ *      s  -  Server sending a title word to all clients (EMITTED TO ALL!)
+ *            CONTENT:  [{The word object containing the w packet's word as a string}]
  *
  *      v  -  Update vote score of word. (EMITTED TO ALL!)
  *            CONTENT:  [The index of the word in the story array, & its new score total], both as ints.
@@ -114,30 +123,61 @@ requestWhichStory(); // Begin initialization of picking up wherever the server l
 
 // #######################################################################################
 //  Server Variables
-var VERSION = 3; // Server's version; Used to validate major changes with the client
+var VERSION = 4; // Server's version; Used to validate major changes with the client
 var UserObject = {}; // Object of arrays: 
 // socket.id: [socket object pointer, UUID, prognostication string, IP]
 
-var UserObjectsByIP = {}; // IP: socket.id
-
-var Prognostication_Delta = []; // list of UUIDs and their strings which need updating next prog cycle
+var UserIPs = {}; // IP: [[UUID, socket.id, last login's Date.now], etc.]  (UUID never changes in-object)
+var ConnectionsPerIP = {}; // IP:  Active Connections (INT)
 
 var WaitList = []; // List of users that are required to wait before submitting further entries.
 
 var STORY = []; // The story data so far
+var STORY_MODE = 0;
+var STORY_TITLE = []; // The story's title, one word per top 5 contributors
+var STORY_TOP_CONTRIBUTORS = []; // Contributors which can still submit to the title (pop()s on submission)
 var STORY_ACTIVATE_TIME = Date.now(); // The time at which the next story will begin.
 
-var CUTSCENE_TIME = 0; // 15000; // Server-enforced time between games (cutscene duration!)
+var CUTSCENE_TIME = 0; // 15000; // Server-enforced time between games (cutscene duration!) 
 
 var FLAG_SPUN_ONCE = false; // If true, the spinner has begun
 var ITERATIVE_UUID = 0; // this number will be new users' iterating UUID
+var TIMEOUT_ELAPSE_CHECK_NUM = 0; // if this number is the same after titling timeout, auto-submit story
+
+var MINIMUM_SESSION_DURATION_MINS = 30; // In (this number) of minutes, users' UUIDs may be lost.
 
 
 
 // #######################################################################################
 //  Server functions
-function updateActiveUsers(){
-
+function cleanUsers(){ // Function called each hour to allow users a new "session" and UUID for their IP
+  var IPS_PURGED = [];
+  var UUIDs_PURGED = [];
+  for(var IP in ConnectionsPerIP){
+    if(ConnectionsPerIP[IP] == 0){
+      //  Nobody is connected on this IP right now; Consider if any, or all, users need to die
+      for(var USER of UserIPs[IP]){ // NOTE: Using the IP property names to iterate the UserIPs object!
+        if(Date.now() - USER[2] > (1000 * 60 * MINIMUM_SESSION_DURATION_MINS)){
+          UUIDs_PURGED.push(USER); // Log deletion
+          delete UserIPs[IP][USER]; // Delete this user
+        }
+      }
+      //  If nobody remains on this IP, free the IP entirely
+      if(UserIPs[IP].length == 0){
+        IPS_PURGED.push(IP);
+        delete UserIPs[IP];
+        delete ConnectionsPerIP[IP];
+      }
+    }
+  }
+  if(IPS_PURGED.length != 0){
+    console.log(IPS_PURGED);
+    console.log('Purged '+IPS_PURGED.length+' IPs from ConnectionsPerIP');
+  }
+  if(UUIDs_PURGED.length != 0){
+    console.log(UUIDs_PURGED);
+    console.log('Purged '+UUIDs_PURGED.length+' User UUID bindings from UserIPs');
+  }
 }
 
 function decrementWaitlist(){
@@ -157,19 +197,97 @@ function getFullUserdata(){
   return CompiledUserdata;
 }
 
-function updateUserdata(){
-
-}
-
 function currentlyOnline(){
   return Object.keys(UserObject).length;
 }
 
+function conjugateWord(STRING, WORD, PREVIOUS_WORD, IND){
+  var NEWSTRING = STRING;
+  var LEADING_SPACE = ' '; // leading space
+  if(WORD[0].match(/^[.,:;!?)']/) || IND == 0){
+    LEADING_SPACE = '';
+  } else if(PREVIOUS_WORD == '(' || PREVIOUS_WORD == '"'){
+    LEADING_SPACE = '';
+  }
+  NEWSTRING += (LEADING_SPACE + WORD);
+  return NEWSTRING;
+}
+
+function conjugateStoryOrTitleForXWords(STORY_OBJECT, NUM_WORDS){
+  var CONJ = '';
+  for(var i=0; i<NUM_WORDS; i++){
+    var PREVWORD = '';
+    if(typeof STORY[i-1] != 'undefined'){
+      PREVWORD = STORY[i-1].word; 
+    }
+    CONJ = conjugateWord(CONJ, STORY[i].word, PREVWORD, i);
+  }
+  return CONJ;
+}
+
+function determineTopContributors(){
+  var numbers = [];
+  for(var WORD of STORY){
+    numbers.push(WORD.by);
+  }
+  const frequency = {};
+  for (const num of numbers) {
+    if (frequency[num]) {
+      frequency[num] += 1;
+    } else {
+      frequency[num] = 1;
+    }
+  }
+  const sortedFrequency = Object.entries(frequency).sort((a, b) => b[1] - a[1]);
+  return sortedFrequency.slice(0, 5).map(entry => entry[0]);
+}
+
+function getCompressedStory(){
+  var WORD_ARRAY = [];
+  var BY_ARRAY = [];
+  var AT_ARRAY = [];
+  var VOTE_ARRAY = [];
+  var FIRST_SIX_WORDS = conjugateStoryOrTitleForXWords(STORY, 6);
+  var TITLE = conjugateStoryOrTitleForXWords(STORY_TITLE, STORY_TITLE.length);
+  for(var i=0; i<STORY.length; i++){
+    WORD_ARRAY.push(STORY[i].word);
+    BY_ARRAY.push(STORY[i].by);
+    AT_ARRAY.push(STORY[i].at);
+    VOTE_ARRAY.push(STORY[i].votes); 
+  }
+  var PRECOMPRESSED_STORY_OBJECT = {
+    words: WORD_ARRAY,
+    authors: BY_ARRAY,
+    times: AT_ARRAY,
+    votes: VOTE_ARRAY
+  };
+
+  var STRINGIFIED_STORY = JSON.stringify(PRECOMPRESSED_STORY_OBJECT);
+  var COMPRESSED_STORY = LZUTF8.compress(STRINGIFIED_STORY, {outputEncoding: "Base64"});
+
+  return [COMPRESSED_STORY, FIRST_SIX_WORDS, TITLE];
+}
+
+function timeoutSubmission(TO_CHECK){
+  if(TO_CHECK == TIMEOUT_ELAPSE_CHECK_NUM){
+    console.log('>>> Timeout elapsed, submitting story...');
+    submitStory(io);
+  }
+}
+
 function submitStory(IO_REFERENCE){
-  const FORM_DATA = JSON.stringify({story: STORY, whichStory: WHICH_STORY, uploaded: Date.now(), storyServerVersion: VERSION});
-  request.post(
-    'https://rotisseriechicken.world/story/stories/%5EcommitStoryContentAndIncrement.php',
-    {json: FORM_DATA},
+  TIMEOUT_ELAPSE_CHECK_NUM++;
+  var COMPRESSED_STORY = getCompressedStory();
+  const FORM_DATA = { // create the template form data object for this submission
+    story: COMPRESSED_STORY[0],
+    beginsWith: COMPRESSED_STORY[1], 
+    title: COMPRESSED_STORY[2],
+    date: Date.now(), 
+    ver: VERSION
+  };
+  request.post( // submit the story to Chicken HQ's server
+    'https://rotisseriechicken.world/story/stories/api/submit.php',
+    {storyData: FORM_DATA},
     function (error, response, body) {
       if (!error && response.statusCode == 200) {
         console.log('Story submission returned 200 status');
@@ -179,6 +297,8 @@ function submitStory(IO_REFERENCE){
             console.log('STORY #' + WHICH_STORY + ' successfully submitted! Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+CUTSCENE_TIME+'...');
             WHICH_STORY++;
             STORY = [];
+            STORY_TITLE = [];
+            STORY_TOP_CONTRIBUTORS = [];
             IO_REFERENCE.emit('f', [WHICH_STORY, (Date.now() + CUTSCENE_TIME)]);
           } else {
             console.log('Body DID NOT return "ok"! re-attempting...');
@@ -231,16 +351,35 @@ io.on("connect", socket => {
       console.log('<--> Server spinner instance connected on IP ' + USER_IP);
     } else {
       //  compile user data
-      UserObject[socket.id] = [socket, ITERATIVE_UUID, '', USER_IP]; // Add user object
-      var GAME_MODE_NOW = 0; // In an active game
+      var This_UID = ITERATIVE_UUID;
+      var Do_not_iterate_UUID = false;
+      var rePrefix = '';
+      if(typeof ConnectionsPerIP[USER_IP] == 'undefined'){
+        //  Create an IP reference for this user's IP
+        ConnectionsPerIP[USER_IP] = 1;
+        // This is now this user's UUID until reset
+        UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] = [ITERATIVE_UUID, socket.id, Date.now()];
+      } else {
+        ConnectionsPerIP[USER_IP] = (parseInt(ConnectionsPerIP[USER_IP]) + 1);
+        // Their socket ID has been updated, but UUID remains
+        UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][1] = socket.id; 
+        UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][2] = Date.now();
+        This_UID = UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][0];
+        Do_not_iterate_UUID = true;
+        rePrefix = 're';
+      }
+      UserObject[socket.id] = [socket, This_UID, '', USER_IP]; // Add user object
+      var GAME_MODE_NOW = STORY_MODE; // In an active game in either playing state or titling state
       if(Date.now() < STORY_ACTIVATE_TIME){
         GAME_MODE_NOW = 1; // Cutscene
       }
       var TUSERDATA = getFullUserdata();
-      socket.emit('c', [WHICH_STORY, STORY, VERSION, ITERATIVE_UUID, GAME_MODE_NOW, [0, TUSERDATA]]);
-      socket.broadcast.emit('J', [ITERATIVE_UUID]); // emit to all but joiner that a new client has joined
-      console.log('O--> User ' + socket.id + ' (UUID '+ITERATIVE_UUID+') connected (' + currentlyOnline() + ' connected)');
-      ITERATIVE_UUID++; // iterate UUID list
+      socket.emit('c', [WHICH_STORY, STORY, VERSION, This_UID, GAME_MODE_NOW, [0, TUSERDATA]]);
+      socket.broadcast.emit('J', [This_UID]); // emit to all but joiner that a new client has joined
+      console.log('O--> User ' + socket.id + ' (UUID '+This_UID+') '+rePrefix+'connected (' + currentlyOnline() + ' connected)');
+      if(Do_not_iterate_UUID == false){
+        ITERATIVE_UUID++; // iterate UUID list if this is a unique user
+      }
     }
 
 
@@ -279,7 +418,7 @@ io.on("connect", socket => {
 
         if(SERVER_INITIALIZED == true){
 
-          if(STORY.length < 100){
+          if(STORY.length < 100 || STORY_MODE == 2){ // Accepts when active story, or title time
 
             try{
               if (typeof word === 'string' || word instanceof String){
@@ -290,7 +429,7 @@ io.on("connect", socket => {
             }
 
             var WaitListInd = WaitList.findIndex(elem => elem[0] === socket.id);
-            if(WaitListInd == -1){ // If user is not on the waitlist,
+            if(WaitListInd == -1 || STORY_MODE == 2){ // If user is not on the waitlist (except titling),
 
               if(STORY_ACTIVATE_TIME <= Date.now()){
 
@@ -339,18 +478,46 @@ io.on("connect", socket => {
                   */
 
                   //  Add to story
-                  STORY.push(WORD_OBJECT);
-                  socket.broadcast.emit('+', [WORD_OBJECT]);
-                  socket.emit('+', [WORD_OBJECT, WaitlistedFor]);
-                  console.log('UUID ' + UserObject[socket.id][1] + ':  ' + CLEANWORD);
+                  if(STORY.length < 100){
+                    STORY.push(WORD_OBJECT);
+                    socket.broadcast.emit('+', [WORD_OBJECT]);
+                    socket.emit('+', [WORD_OBJECT, WaitlistedFor]);
+                    console.log('UUID ' + UserObject[socket.id][1] + ':  ' + CLEANWORD);
+                    UserObject[socket.id][2] = '';
 
-                  UserObject[socket.id][2] = '';
+                  } else { // Add to the title
+                    if(STORY_TOP_CONTRIBUTORS.includes(UserObject[socket.id][1])){
+                      //  Can submit to the title; Top contributor
+                      STORY_TITLE.push(WORD_OBJECT);
+                      io.emit('s', [WORD_OBJECT]);
+                      console.log('UUID ' + UserObject[socket.id][1] + ':  ' + CLEANWORD);
+                      UserObject[socket.id][2] = '';
+                      var STC_IND = STORY_TOP_CONTRIBUTORS.indexOf(UserObject[socket.id][1]);
+                      STORY_TOP_CONTRIBUTORS.splice(STC_IND, 1); // Remove user from title contribution
+
+                      if(STORY_TOP_CONTRIBUTORS.length == 0){ //  No titlers remain: Submit story
+                        console.log('>>> Titling completed, submitting story...');
+                        STORY_MODE = 0;
+                        submitStory(io);
+                      }
+                    } else { // User is not included in the title creation process
+                      socket.emit('r', [5, 0]);
+                    }
+                  }
 
                   //  if story reaches 100 words, emit the Finished message
                   if(STORY.length == 100){
                     //  Submit story to Chicken HQ, then on successful submission, start next game
-                    console.log('>>> Story completed, submitting...');
-                    submitStory(io);
+                    console.log('>>> Story completed, designating the titling process (20 sec!)...');
+                    STORY_TOP_CONTRIBUTORS = determineTopContributors();
+                    console.log('Top contributors:'); console.log(STORY_TOP_CONTRIBUTORS);
+                    STORY_MODE = 2;
+                    io.emit('t', STORY_TOP_CONTRIBUTORS);
+
+                    //  in case the title is not determined in 25 seconds, auto-submit regardless
+                    var verification = JSON.parse(JSON.stringify({storyNumber: TIMEOUT_ELAPSE_CHECK_NUM}));
+                    var verf = verification.storyNumber;
+                    setTimeout(timeoutSubmission, 20000, verf);
                   }
 
                 } else { // Invalid word
@@ -382,9 +549,9 @@ io.listen(PORT); // Listen on server-designated port
 console.log('Server started on port ' + PORT);
 
 //  Ping initialization
-const deadusers = schedule.scheduleJob('59 * * * * *', function(){ // Every minute (agressive downspin...)
-    console.log('Updating user activity...');
-    updateActiveUsers();
+const deadusers = schedule.scheduleJob('* 0 * * * *', function(){ // Every minute (agressive downspin...)
+    console.log('Re-sessioning old users...');
+    cleanUsers();
 });
 
 //  Self-client initiailization (spinner)
