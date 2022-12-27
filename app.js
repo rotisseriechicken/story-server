@@ -364,12 +364,18 @@ io.on("connect", socket => {
         UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] = [ITERATIVE_UUID, socket.id, Date.now()];
       } else {
         ConnectionsPerIP[USER_IP] = (parseInt(ConnectionsPerIP[USER_IP]) + 1);
+        console.log('Facilitating IP ' + USER_IP + ' connection #' + ConnectionsPerIP[USER_IP] + '...');
         // Their socket ID has been updated, but UUID remains
-        UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][1] = socket.id; 
-        UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][2] = Date.now();
-        This_UID = UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][0];
-        Do_not_iterate_UUID = true;
-        rePrefix = 're';
+        if(typeof  UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] == 'undefined'){
+          // This is now this user's UUID until reset
+          UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] = [ITERATIVE_UUID, socket.id, Date.now()];
+        } else {
+          UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][1] = socket.id; 
+          UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][2] = Date.now();
+          This_UID = UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][0];
+          Do_not_iterate_UUID = true;
+          rePrefix = 're';
+        }
       }
       UserObject[socket.id] = [socket, This_UID, '', USER_IP]; // Add user object
       var GAME_MODE_NOW = STORY_MODE; // In an active game in either playing state or titling state
