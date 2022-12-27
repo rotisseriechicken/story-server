@@ -230,7 +230,7 @@ function conjugateStoryOrTitleForXWords(STORY_OBJECT, NUM_WORDS){
 function determineTopContributors(){
   var numbers = [];
   for(var WORD of STORY){
-    numbers.push(WORD.by);
+    numbers.push(parseInt(WORD.by));
   }
   const frequency = {};
   for (const num of numbers) {
@@ -249,7 +249,7 @@ function getCompressedStory(){
   var BY_ARRAY = [];
   var AT_ARRAY = [];
   var VOTE_ARRAY = [];
-  var FIRST_SIX_WORDS = conjugateStoryOrTitleForXWords(STORY, 6);
+  var FIRST_WORDS = conjugateStoryOrTitleForXWords(STORY, 8);
   var TITLE = conjugateStoryOrTitleForXWords(STORY_TITLE, STORY_TITLE.length);
   for(var i=0; i<STORY.length; i++){
     WORD_ARRAY.push(STORY[i].word);
@@ -267,7 +267,7 @@ function getCompressedStory(){
   var STRINGIFIED_STORY = JSON.stringify(PRECOMPRESSED_STORY_OBJECT);
   var COMPRESSED_STORY = lzutf8.compress(STRINGIFIED_STORY, {outputEncoding: "Base64"});
 
-  return [COMPRESSED_STORY, FIRST_SIX_WORDS, TITLE];
+  return [COMPRESSED_STORY, FIRST_WORDS, TITLE];
 }
 
 function timeoutSubmission(TO_CHECK){
