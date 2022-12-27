@@ -358,6 +358,7 @@ io.on("connect", socket => {
         //  Create an IP reference for this user's IP
         ConnectionsPerIP[USER_IP] = 1;
         // This is now this user's UUID until reset
+        UserIPs[USER_IP] = [];
         UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] = [ITERATIVE_UUID, socket.id, Date.now()];
       } else {
         ConnectionsPerIP[USER_IP] = (parseInt(ConnectionsPerIP[USER_IP]) + 1);
