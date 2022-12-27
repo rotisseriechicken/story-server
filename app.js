@@ -241,7 +241,12 @@ function determineTopContributors(){
     }
   }
   const sortedFrequency = Object.entries(frequency).sort((a, b) => b[1] - a[1]);
-  return sortedFrequency.slice(0, 5).map(entry => entry[0]);
+  var ARR = sortedFrequency.slice(0, 5).map(entry => entry[0]);
+  var ARR_INTS = [];
+  for(var NUM of ARR){
+    ARR_INTS.push(parseInt(NUM));
+  }
+  return ARR_INTS;
 }
 
 function getCompressedStory(){
