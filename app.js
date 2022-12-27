@@ -73,7 +73,7 @@ requestWhichStory(); // Begin initialization of picking up wherever the server l
  *            CONTENT:  [The integer of the new story, The Date.now() UTC time of the next game start]
  *
  *      t  -  Server stating it is time to title the story, and a list of users that can title it. (EMITTED TO ALL!)
- *            CONTENT:  [List of UUIDs which can still submit to the title]
+ *            CONTENT:  [[List of UUIDs which can still submit to the title], Date.now() + 20 seconds]
  *
  *      s  -  Server sending a title word to all clients (EMITTED TO ALL!)
  *            CONTENT:  [{The word object containing the w packet's word as a string}]
@@ -344,7 +344,6 @@ function HTMLcleanString(UNSAFE_STRING){
 io.on("connect", socket => {
 
     //  On new client connecting to server
-    //  get user's IP
     var USER_IP = 'unknown';
     try{
       USER_IP = socket.handshake.headers['true-client-ip'];
@@ -364,7 +363,7 @@ io.on("connect", socket => {
         UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] = [ITERATIVE_UUID, socket.id, Date.now()];
       } else { // Somebody has connected from this IP, but this could be them or someone new
         ConnectionsPerIP[USER_IP] = (parseInt(ConnectionsPerIP[USER_IP]) + 1);
-        console.log('Facilitating IP ' + USER_IP + ' connection #' + ConnectionsPerIP[USER_IP] + '...');
+        console.log('Refacilitating IP ' + USER_IP + ' connection #' + ConnectionsPerIP[USER_IP] + '...');
         // Their socket ID has been updated, but UUID remains
         if(typeof UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] == 'undefined'){
           //  This is a new user on the same IP as someone else that has previously used STORY
@@ -506,8 +505,23 @@ io.on("connect", socket => {
                     console.log('UUID ' + UserObject[socket.id][1] + ':  ' + CLEANWORD);
                     UserObject[socket.id][2] = '';
 
+                    //  if story reaches 100 words, emit the Title message, and begin Finishing
+                    if(STORY.length == 100){
+                      //  Submit story to Chicken HQ, then on successful submission, start next game
+                      console.log('>>> Story completed, designating the titling process (20 sec!)...');
+                      STORY_TOP_CONTRIBUTORS = determineTopContributors();
+                      console.log('Top contributors:'); console.log(STORY_TOP_CONTRIBUTORS);
+                      STORY_MODE = 2;
+                      io.emit('t', [STORY_TOP_CONTRIBUTORS, (Date.now() + 20000)]);
+
+                      //  in case the title is not determined in 25 seconds, auto-submit regardless
+                      var verification = JSON.parse(JSON.stringify({storyNumber: TIMEOUT_ELAPSE_CHECK_NUM}));
+                      var verf = verification.storyNumber;
+                      setTimeout(timeoutSubmission, 20000, verf);
+                    }
+
                   } else { // Add to the title
-                    if(STORY_TOP_CONTRIBUTORS.includes(UserObject[socket.id][1])){
+                    if(STORY_TOP_CONTRIBUTORS.includes(parseInt(UserObject[socket.id][1]))){
                       //  Can submit to the title; Top contributor
                       STORY_TITLE.push(WORD_OBJECT);
                       io.emit('s', [WORD_OBJECT]);
@@ -525,22 +539,6 @@ io.on("connect", socket => {
                       socket.emit('r', [5, 0]);
                     }
                   }
-
-                  //  if story reaches 100 words, emit the Finished message
-                  if(STORY.length == 100){
-                    //  Submit story to Chicken HQ, then on successful submission, start next game
-                    console.log('>>> Story completed, designating the titling process (20 sec!)...');
-                    STORY_TOP_CONTRIBUTORS = determineTopContributors();
-                    console.log('Top contributors:'); console.log(STORY_TOP_CONTRIBUTORS);
-                    STORY_MODE = 2;
-                    io.emit('t', STORY_TOP_CONTRIBUTORS);
-
-                    //  in case the title is not determined in 25 seconds, auto-submit regardless
-                    var verification = JSON.parse(JSON.stringify({storyNumber: TIMEOUT_ELAPSE_CHECK_NUM}));
-                    var verf = verification.storyNumber;
-                    setTimeout(timeoutSubmission, 20000, verf);
-                  }
-
                 } else { // Invalid word
                   socket.emit('r', [0, 0]);
                 }
