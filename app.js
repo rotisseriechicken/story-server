@@ -287,9 +287,10 @@ function submitStory(IO_REFERENCE){
     date: Date.now(), 
     ver: VERSION
   };
+  console.log('STORY: '); console.log(FORM_DATA);
   request.post( // submit the story to Chicken HQ's server
     'https://rotisseriechicken.world/story/stories/api/submit.php',
-    {storyData: FORM_DATA},
+    {json: FORM_DATA},
     function (error, response, body) {
       if (!error && response.statusCode == 200) {
         console.log('Story submission returned 200 status');
