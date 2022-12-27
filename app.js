@@ -265,7 +265,7 @@ function getCompressedStory(){
   };
 
   var STRINGIFIED_STORY = JSON.stringify(PRECOMPRESSED_STORY_OBJECT);
-  var COMPRESSED_STORY = LZUTF8.compress(STRINGIFIED_STORY, {outputEncoding: "Base64"});
+  var COMPRESSED_STORY = lzutf8.compress(STRINGIFIED_STORY, {outputEncoding: "Base64"});
 
   return [COMPRESSED_STORY, FIRST_SIX_WORDS, TITLE];
 }
@@ -371,9 +371,19 @@ io.on("connect", socket => {
           // This is now this user's UUID until reset
           UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] = [ITERATIVE_UUID, socket.id, Date.now()];
         } else { // This is an existing user on the network
-          UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][1] = socket.id; 
-          UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][2] = Date.now();
-          This_UID = UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][0];
+          var ITER_ADDR = (ConnectionsPerIP[USER_IP] - 1);
+          for(var i=0; i<UserIPs[USER_IP].length; i++){
+            // iterate through holes in this IP's array, and fill the foremost one;
+            //    This is EXTREMELY NOT a bulletproof strategy to keep users on the same network
+            //    in the same order, but it's better than nothing for the time being.
+            if(typeof UserObject[UserIPs[USER_IP][i][1]] == 'undefined'){
+              ITER_ADDR = i; // The earliest user in the list to disconnect gets their place in line
+              break;
+            }
+          }
+          UserIPs[USER_IP][ITER_ADDR][1] = socket.id; 
+          UserIPs[USER_IP][ITER_ADDR][2] = Date.now();
+          This_UID = UserIPs[USER_IP][ITER_ADDR][0];
           Do_not_iterate_UUID = true;
           rePrefix = 're';
         }
@@ -397,9 +407,9 @@ io.on("connect", socket => {
     //  On client disconnecting from server for any reason
     socket.on("disconnect", (reason) => {
       if(typeof UserObject[socket.id] != 'undefined'){
+        ConnectionsPerIP[UserObject[socket.id][3]] = (parseInt(ConnectionsPerIP[UserObject[socket.id][3]]) - 1);
         var DISCONNECTED_USER = [socket.id, parseInt(UserObject[socket.id][1])];
         socket.broadcast.emit('L', [DISCONNECTED_USER[1]]); // emit to all but joiner that this client left
-        ConnectionsPerIP[UserObject[socket.id][3]] = (ConnectionsPerIP[UserObject[socket.id][3]] - 1);
         delete UserObject[socket.id];
         // UserList.splice(UserList.findIndex(elem => elem === USER), 1);
         console.log('X<-- User ' + DISCONNECTED_USER[0] + ' (UUID '+DISCONNECTED_USER[1]+') disconnected (' + currentlyOnline() + ' connected)');
