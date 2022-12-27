@@ -356,20 +356,21 @@ io.on("connect", socket => {
       var This_UID = ITERATIVE_UUID;
       var Do_not_iterate_UUID = false;
       var rePrefix = '';
-      if(typeof ConnectionsPerIP[USER_IP] == 'undefined'){
+      if(typeof ConnectionsPerIP[USER_IP] == 'undefined'){ // Nobody has connected from this IP yet
         //  Create an IP reference for this user's IP
         ConnectionsPerIP[USER_IP] = 1;
         // This is now this user's UUID until reset
         UserIPs[USER_IP] = [];
         UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] = [ITERATIVE_UUID, socket.id, Date.now()];
-      } else {
+      } else { // Somebody has connected from this IP, but this could be them or someone new
         ConnectionsPerIP[USER_IP] = (parseInt(ConnectionsPerIP[USER_IP]) + 1);
         console.log('Facilitating IP ' + USER_IP + ' connection #' + ConnectionsPerIP[USER_IP] + '...');
         // Their socket ID has been updated, but UUID remains
-        if(typeof  UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] == 'undefined'){
+        if(typeof UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] == 'undefined'){
+          //  This is a new user on the same IP as someone else that has previously used STORY
           // This is now this user's UUID until reset
           UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)] = [ITERATIVE_UUID, socket.id, Date.now()];
-        } else {
+        } else { // This is an existing user on the network
           UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][1] = socket.id; 
           UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][2] = Date.now();
           This_UID = UserIPs[USER_IP][(ConnectionsPerIP[USER_IP] - 1)][0];
@@ -398,6 +399,7 @@ io.on("connect", socket => {
       if(typeof UserObject[socket.id] != 'undefined'){
         var DISCONNECTED_USER = [socket.id, parseInt(UserObject[socket.id][1])];
         socket.broadcast.emit('L', [DISCONNECTED_USER[1]]); // emit to all but joiner that this client left
+        ConnectionsPerIP[UserObject[socket.id][3]] = (ConnectionsPerIP[UserObject[socket.id][3]] - 1);
         delete UserObject[socket.id];
         // UserList.splice(UserList.findIndex(elem => elem === USER), 1);
         console.log('X<-- User ' + DISCONNECTED_USER[0] + ' (UUID '+DISCONNECTED_USER[1]+') disconnected (' + currentlyOnline() + ' connected)');
