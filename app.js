@@ -131,6 +131,7 @@ var UserIPs = {}; // IP: [[UUID, socket.id, last login's Date.now], etc.]  (UUID
 var ConnectionsPerIP = {}; // IP:  Active Connections (INT)
 
 var WaitList = []; // List of users that are required to wait before submitting further entries.
+var Prognostication_Delta = []; // list of UUIDs and their strings which need updating next prog cycle
 
 var STORY = []; // The story data so far
 var STORY_MODE = 0;
@@ -145,6 +146,7 @@ var ITERATIVE_UUID = 0; // this number will be new users' iterating UUID
 var TIMEOUT_ELAPSE_CHECK_NUM = 0; // if this number is the same after titling timeout, auto-submit story
 
 var MINIMUM_SESSION_DURATION_MINS = 30; // In (this number) of minutes, users' UUIDs may be lost.
+
 
 
 
