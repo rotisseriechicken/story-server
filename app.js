@@ -123,7 +123,7 @@ requestWhichStory(); // Begin initialization of picking up wherever the server l
 
 // #######################################################################################
 //  Server Variables
-var VERSION = 4; // Server's version; Used to validate major changes with the client
+var VERSION = 5; // Server's version; Used to validate major changes with the client
 var UserObject = {}; // Object of arrays: 
 // socket.id: [socket object pointer, UUID, prognostication string, IP]
 
@@ -138,8 +138,9 @@ var STORY_MODE = 0;
 var STORY_TITLE = []; // The story's title, one word per top 5 contributors
 var STORY_TOP_CONTRIBUTORS = []; // Contributors which can still submit to the title (pop()s on submission)
 var STORY_ACTIVATE_TIME = Date.now(); // The time at which the next story will begin.
+var TITLE_END_TIME = Date.now(); // The time at which the titling process will end.
 
-var CUTSCENE_TIME = 0; // 15000; // Server-enforced time between games (cutscene duration!) 
+var CUTSCENE_TIME = 30000; // 15000; // Server-enforced time between games (cutscene duration!) 
 
 var FLAG_SPUN_ONCE = false; // If true, the spinner has begun
 var ITERATIVE_UUID = 0; // this number will be new users' iterating UUID
@@ -296,7 +297,8 @@ function submitStory(IO_REFERENCE){
     story: COMPRESSED_STORY[0],
     beginsWith: COMPRESSED_STORY[1], 
     title: COMPRESSED_STORY[2],
-    date: Date.now(), 
+    started: STORY_ACTIVATE_TIME,
+    completed: Date.now(), 
     ver: VERSION
   };
   console.log('STORY: '); console.log(FORM_DATA);
@@ -314,7 +316,8 @@ function submitStory(IO_REFERENCE){
             STORY = [];
             STORY_TITLE = [];
             STORY_TOP_CONTRIBUTORS = [];
-            IO_REFERENCE.emit('f', [WHICH_STORY, (Date.now() + CUTSCENE_TIME)]);
+            STORY_ACTIVATE_TIME = (Date.now() + CUTSCENE_TIME);
+            IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME]);
           } else {
             console.log('Body DID NOT return "ok"! re-attempting...');
             setTimeout(function() {
@@ -406,7 +409,16 @@ io.on("connect", socket => {
         GAME_MODE_NOW = 1; // Cutscene
       }
       var TUSERDATA = getFullUserdata();
-      socket.emit('c', [WHICH_STORY, STORY, VERSION, This_UID, GAME_MODE_NOW, [0, TUSERDATA]]);
+      socket.emit('c', [  WHICH_STORY,
+                          STORY, 
+                          VERSION, 
+                          This_UID, 
+                          GAME_MODE_NOW, 
+                          [0, TUSERDATA], 
+                          [STORY_TITLE, STORY_TOP_CONTRIBUTORS], 
+                          STORY_ACTIVATE_TIME,
+                          TITLE_END_TIME
+                       ]);
       socket.broadcast.emit('J', [This_UID]); // emit to all but joiner that a new client has joined
       console.log('O--> User ' + socket.id + ' (UUID '+This_UID+') '+rePrefix+'connected (' + currentlyOnline() + ' connected)');
       if(Do_not_iterate_UUID == false){
@@ -525,7 +537,8 @@ io.on("connect", socket => {
                       STORY_TOP_CONTRIBUTORS = determineTopContributors();
                       console.log('Top contributors:'); console.log(STORY_TOP_CONTRIBUTORS);
                       STORY_MODE = 2;
-                      io.emit('t', [STORY_TOP_CONTRIBUTORS, (Date.now() + 20000)]);
+                      TITLE_END_TIME = (Date.now() + 20000);
+                      io.emit('t', [STORY_TOP_CONTRIBUTORS, TITLE_END_TIME]);
 
                       //  in case the title is not determined in 25 seconds, auto-submit regardless
                       var verification = JSON.parse(JSON.stringify({storyNumber: TIMEOUT_ELAPSE_CHECK_NUM}));
