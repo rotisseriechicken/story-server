@@ -140,7 +140,7 @@ var STORY_TOP_CONTRIBUTORS = []; // Contributors which can still submit to the t
 var STORY_ACTIVATE_TIME = Date.now(); // The time at which the next story will begin.
 var TITLE_END_TIME = Date.now(); // The time at which the titling process will end.
 
-var CUTSCENE_TIME = 30000; // 15000; // Server-enforced time between games (cutscene duration!) 
+var CUTSCENE_TIME = 40000; // 15000; // Server-enforced time between games (cutscene duration!) 
 
 var FLAG_SPUN_ONCE = false; // If true, the spinner has begun
 var ITERATIVE_UUID = 0; // this number will be new users' iterating UUID
@@ -226,10 +226,10 @@ function conjugateStoryOrTitleForXWords(STORY_OBJECT, NUM_WORDS){
   var CONJ = '';
   for(var i=0; i<NUM_WORDS; i++){
     var PREVWORD = '';
-    if(typeof STORY[i-1] != 'undefined'){
-      PREVWORD = STORY[i-1].word; 
+    if(typeof STORY_OBJECT[i-1] != 'undefined'){
+      PREVWORD = STORY_OBJECT[i-1].word; 
     }
-    CONJ = conjugateWord(CONJ, STORY[i].word, PREVWORD, i);
+    CONJ = conjugateWord(CONJ, STORY_OBJECT[i].word, PREVWORD, i);
   }
   return CONJ;
 }
@@ -301,6 +301,10 @@ function submitStory(IO_REFERENCE){
     completed: Date.now(), 
     ver: VERSION
   };
+  var END_DATA = {
+    started: STORY_ACTIVATE_TIME,
+    completed: Date.now()
+  }
   console.log('STORY: '); console.log(FORM_DATA);
   request.post( // submit the story to Chicken HQ's server
     'https://rotisseriechicken.world/story/stories/api/submit.php',
@@ -317,7 +321,7 @@ function submitStory(IO_REFERENCE){
             STORY_TITLE = [];
             STORY_TOP_CONTRIBUTORS = [];
             STORY_ACTIVATE_TIME = (Date.now() + CUTSCENE_TIME);
-            IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME]);
+            IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME, END_DATA]);
           } else {
             console.log('Body DID NOT return "ok"! re-attempting...');
             setTimeout(function() {
