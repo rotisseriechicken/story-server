@@ -272,7 +272,7 @@ async function getTTS(url) {
       mp3Duration(narr_buffer, function (err, duration) {
         if(err){console.log('Problem parsing duration!');console.log(err);}
         resolve([narr_buffer, parseInt(duration*1000)]);
-      }
+      });
     });
   });
 }
