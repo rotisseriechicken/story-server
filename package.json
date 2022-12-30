@@ -8,8 +8,7 @@
   "license": false,
   "private": false,
   "scripts": {
-    "start": "node app.js",
-    "install": "npm install --legacy-bundling"
+    "start": "node app.js"
   },
   "dependencies": {
     "socket.io": "^4.5.4",

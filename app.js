@@ -13,9 +13,9 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 //  Initializing spinner
 const schedule = require('node-schedule');
 
-//  Initialize music parser and fetching (legacy-bundling)
-const mm = require('music-metadata');
-const fetch = require('node-fetch');
+//  Initialize music parser and fetching
+import { parseBuffer } from 'music-metadata';
+import fetch from 'node-fetch';
 
 //  Initialize compression
 var lzutf8 = require('lzutf8');
@@ -265,7 +265,7 @@ async function getTTS(url) {
     const response = await fetch(url); // get the TTS from the internet
     if(response.ok){
       const buffer = await response.buffer();
-      const metadata = await mm.parseBuffer(buffer, 'audio/mp3', { native: true });
+      const metadata = await parseBuffer(buffer, 'audio/mp3', { native: true });
       const duration = metadata.format.duration;
       return [response, duration];
     } else {
