@@ -3,8 +3,9 @@ const options = { cors: { origin: ["wss://rotisseriechicken.world", "wss://story
 const io = require("socket.io")(options);
 const PORT = process.env.PORT || 3000;
 
-//  Initializing HTTP GET client
+//  Initializing HTTP GET client, and the Fetch module
 const request = require('request');
+var fetch = require('node-fetch');
 
 //  Initializing socket client
 var client_io = require("socket.io-client");
@@ -15,6 +16,9 @@ const schedule = require('node-schedule');
 
 //  Initialize compression
 var lzutf8 = require('lzutf8');
+
+//  Initialize music metadata module
+var mm = require('music-metadata');
 
 // Static outbound server IPs
 var SERVER_IPS = ['3.134.238.10', '3.129.111.220', '52.15.118.168'];
