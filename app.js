@@ -14,7 +14,7 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 const schedule = require('node-schedule');
 
 //  Init mp3 duration inspector
-import parseBuffer from 'music-metadata';
+import { parseBuffer } from 'music-metadata';
 
 //  Initialize compression
 var lzutf8 = require('lzutf8');
