@@ -312,8 +312,8 @@ function timeoutSubmission(TO_CHECK){
 
 async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
 
-  var TITLE_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + STRARGS[0]);
-  var STORY_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(STRARGS[1]);
+  var TITLE_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + TITLESTRING);
+  var STORY_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(STORYSTRING);
 
   console.log('Title request: ' + TITLE_REQUEST);
   console.log('Story request: ' + STORY_REQUEST);
