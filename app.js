@@ -265,9 +265,13 @@ async function getTTS(url) {
       const duration = metadata.format.duration;
       return [response, duration];
     } else {
+      console.log('Response was not OK! Response:');
+      console.log(response);
       return [-1, 0]; // response was invalid or never returned
     }
   } catch(e){
+    console.log('Error in TTS!');
+    console.log(e);
     return [-1, 0];
   }
 }
@@ -306,19 +310,24 @@ function timeoutSubmission(TO_CHECK){
   }
 }
 
-async function negotiateFinalization(STRARGS, IO_REFERENCE){
-  var END_DATA = [STORY_ACTIVATE_TIME, Date.now()]; // Sent to clients on finish
-  
+async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
+
+  var TITLE_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + STRARGS[0]);
+  var STORY_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(STRARGS[1]);
+
+  console.log('Title request: ' + TITLE_REQUEST);
+  console.log('Story request: ' + STORY_REQUEST);
+
   //  Bake TTS as data to send to all clients
-  var TITLE_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + STRARGS[0]));
-  var STORY_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(STRARGS[1]));
+  var TITLE_AUDIO_OBJ = await getTTS(TITLE_REQUEST);
+  var STORY_AUDIO_OBJ = await getTTS(STORY_REQUEST);
 
   var TITLE_AUDIO = TITLE_AUDIO_OBJ[0]; // The raw response objects for the stories
   var STORY_AUDIO = STORY_AUDIO_OBJ[0];
   var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
   var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
 
-  var TOTAL_DURATION = parseInt(TITLE_AUDIO_DURATION * 1000) + parseInt(STORY_AUDIO_DURATION * 1000) + 1000;
+  var TOTAL_DURATION = parseInt(TITLE_AUDIO_DURATION * 1000) + parseInt(STORY_AUDIO_DURATION * 1000) + 1500; // Average TTS request coordination is ~1000
 
   //  And now, with TTS baked, emit this to all clients
   console.log('Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+TOTAL_DURATION+'...');
@@ -327,7 +336,7 @@ async function negotiateFinalization(STRARGS, IO_REFERENCE){
   STORY_TITLE = [];
   STORY_TOP_CONTRIBUTORS = [];
   STORY_ACTIVATE_TIME = (Date.now() + TOTAL_DURATION);
-  IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME, END_DATA, [TITLE_AUDIO_OBJ, STORY_AUDIO_OBJ]]);
+  IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME, [STORY_ACTIVATE_TIME, Date.now()], [TITLE_AUDIO_OBJ, STORY_AUDIO_OBJ]]);
 }
 
 async function submitStory(IO_REFERENCE){
@@ -354,7 +363,7 @@ async function submitStory(IO_REFERENCE){
           if(body == 'ok'){
             console.log('STORY #' + WHICH_STORY + ' successfully submitted! Cooking TTS...');
 
-            negotiateFinalization([COMPRESSED_STORY[2], FULL_STORY_AS_STRING], IO_REFERENCE); // Finalize story in a separate async function
+            negotiateFinalization(COMPRESSED_STORY[2], FULL_STORY_AS_STRING, IO_REFERENCE); // Finalize story in a separate async function
 
           } else {
             console.log('Body of Story submission DID NOT return "ok"! re-attempting...');
