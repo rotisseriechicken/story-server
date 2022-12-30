@@ -19,6 +19,9 @@ const musicmetadata = require('musicmetadata');
 //  Initialize compression
 var lzutf8 = require('lzutf8');
 
+//  Initialize readable stream module
+// const { Readable } = require('stream');
+
 // Static outbound server IPs
 var SERVER_IPS = ['3.134.238.10', '3.129.111.220', '52.15.118.168'];
 
@@ -292,16 +295,15 @@ async function getTTS(url) {
         console.log(error);
         return [-1, 0];
       }
-
-      const parser = new musicmetadata(null, body);
       let duration;
-
-      parser.on('metadata', data => {
-        duration = parseInt(data.duration * 1000);
-      });
-
-      parser.on('done', () => {
-        resolve([body, duration]);
+      const parser = new musicmetadata(body, function(err, metadata){
+        if(err){
+          console.log('Error in TTS metadata parsing! Error:');
+          console.log(err);
+        } else {
+          duration = parseInt(metadata.duration * 1000);
+          resolve([body, duration]);
+        }
       });
     });
   });
