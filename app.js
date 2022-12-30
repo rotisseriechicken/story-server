@@ -14,8 +14,8 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 const schedule = require('node-schedule');
 
 //  Initialize music parser and fetching
-import { parseBuffer } from 'music-metadata';
-import fetch from 'node-fetch';
+const { parseBuffer } = await import ('music-metadata');
+const fetch = await import ('node-fetch');
 
 //  Initialize compression
 var lzutf8 = require('lzutf8');
