@@ -307,6 +307,8 @@ function timeoutSubmission(TO_CHECK){
 }
 
 async function negotiateFinalization(STRARGS, IO_REFERENCE){
+  var END_DATA = [STORY_ACTIVATE_TIME, Date.now()]; // Sent to clients on finish
+  
   //  Bake TTS as data to send to all clients
   var TITLE_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + STRARGS[0]));
   var STORY_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(STRARGS[1]));
@@ -339,7 +341,6 @@ async function submitStory(IO_REFERENCE){
     completed: Date.now(), 
     ver: VERSION
   };
-  var END_DATA = [STORY_ACTIVATE_TIME, Date.now()]; // Sent to clients on finish
   var FULL_STORY_AS_STRING = conjugateStoryOrTitleForXWords(STORY, STORY.length);
   console.log('STORY: '); console.log(FORM_DATA);
   request.post( // submit the story to Chicken HQ's server
