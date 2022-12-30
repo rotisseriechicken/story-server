@@ -5,7 +5,6 @@ const PORT = process.env.PORT || 3000;
 
 //  Initializing HTTP GET client, and the Fetch module
 const request = require('request');
-var fetch = require('node-fetch');
 
 //  Initializing socket client
 var client_io = require("socket.io-client");
@@ -262,6 +261,8 @@ function determineTopContributors(){
 
 async function getTTS(url) {
   try{
+    //  try a dynamic local import
+    const { fetch } = await import('node-fetch');
     const response = await fetch(url); // get the TTS from the internet
     if(response.ok){
       const buffer = await response.buffer();
