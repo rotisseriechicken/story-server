@@ -306,7 +306,7 @@ function timeoutSubmission(TO_CHECK){
   }
 }
 
-async function negotiateFinalization(STRARGS){
+async function negotiateFinalization(STRARGS, IO_REFERENCE){
   //  Bake TTS as data to send to all clients
   var TITLE_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + STRARGS[0]));
   var STORY_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(STRARGS[1]));
@@ -353,7 +353,7 @@ async function submitStory(IO_REFERENCE){
           if(body == 'ok'){
             console.log('STORY #' + WHICH_STORY + ' successfully submitted! Cooking TTS...');
 
-            negotiateFinalization([COMPRESSED_STORY[2], FULL_STORY_AS_STRING]); // Finalize story in a separate async function
+            negotiateFinalization([COMPRESSED_STORY[2], FULL_STORY_AS_STRING], IO_REFERENCE); // Finalize story in a separate async function
 
           } else {
             console.log('Body of Story submission DID NOT return "ok"! re-attempting...');
