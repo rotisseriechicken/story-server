@@ -13,6 +13,9 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 //  Initializing spinner
 const schedule = require('node-schedule');
 
+//  Initializing music metadata
+const musicmetadata = require('musicmetadata');
+
 //  Initialize compression
 var lzutf8 = require('lzutf8');
 
@@ -256,13 +259,12 @@ function determineTopContributors(){
   return ARR_INTS;
 }
 
+/*
 async function getTTS(url) {
   try{
 
     //  Initialize music parser and fetching
-    const { parseBuffer } = await import ('music-metadata');
-    const fetch = await import ('node-fetch');
-    
+
     const response = await fetch(url); // get the TTS from the internet
     if(response.ok){
       const buffer = await response.buffer();
@@ -279,6 +281,30 @@ async function getTTS(url) {
     console.log(e);
     return [-1, 0];
   }
+}
+*/
+
+async function getTTS(url) {
+  return new Promise((resolve, reject) => {
+    request(url, (error, response, body) => {
+      if (error) {
+        console.log('Error in getTTS! Error:');
+        console.log(error);
+        return [-1, 0];
+      }
+
+      const parser = new musicmetadata(null, body);
+      let duration;
+
+      parser.on('metadata', data => {
+        duration = parseInt(data.duration * 1000);
+      });
+
+      parser.on('done', () => {
+        resolve([body, duration]);
+      });
+    });
+  });
 }
 
 function getCompressedStory(){
@@ -332,7 +358,7 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
   var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
 
-  var TOTAL_DURATION = parseInt(TITLE_AUDIO_DURATION * 1000) + parseInt(STORY_AUDIO_DURATION * 1000) + 1500; // Average TTS request coordination is ~1000
+  var TOTAL_DURATION = TITLE_AUDIO_DURATION + STORY_AUDIO_DURATION + 1500; // Average TTS request coordination is ~1000
 
   //  And now, with TTS baked, emit this to all clients
   console.log('Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+TOTAL_DURATION+'...');
