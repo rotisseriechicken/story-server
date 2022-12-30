@@ -306,6 +306,28 @@ function timeoutSubmission(TO_CHECK){
   }
 }
 
+async function negotiateFinalization(){
+  //  Bake TTS as data to send to all clients
+  var TITLE_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + COMPRESSED_STORY[2]));
+  var STORY_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(FULL_STORY_AS_STRING));
+
+  var TITLE_AUDIO = TITLE_AUDIO_OBJ[0]; // The raw response objects for the stories
+  var STORY_AUDIO = STORY_AUDIO_OBJ[0];
+  var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
+  var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
+
+  var TOTAL_DURATION = parseInt(TITLE_AUDIO_DURATION * 1000) + parseInt(STORY_AUDIO_DURATION * 1000) + 1000;
+
+  //  And now, with TTS baked, emit this to all clients
+  console.log('Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+TOTAL_DURATION+'...');
+  WHICH_STORY++;
+  STORY = [];
+  STORY_TITLE = [];
+  STORY_TOP_CONTRIBUTORS = [];
+  STORY_ACTIVATE_TIME = (Date.now() + TOTAL_DURATION);
+  IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME, END_DATA, [TITLE_AUDIO_OBJ, STORY_AUDIO_OBJ]]);
+}
+
 async function submitStory(IO_REFERENCE){
   TIMEOUT_ELAPSE_CHECK_NUM++;
   var COMPRESSED_STORY = getCompressedStory();
@@ -331,25 +353,7 @@ async function submitStory(IO_REFERENCE){
           if(body == 'ok'){
             console.log('STORY #' + WHICH_STORY + ' successfully submitted! Cooking TTS...');
 
-            //  Bake TTS as data to send to all clients
-            var TITLE_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + COMPRESSED_STORY[2]));
-            var STORY_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(FULL_STORY_AS_STRING));
-
-            var TITLE_AUDIO = TITLE_AUDIO_OBJ[0]; // The raw response objects for the stories
-            var STORY_AUDIO = STORY_AUDIO_OBJ[0];
-            var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
-            var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
-
-            var TOTAL_DURATION = parseInt(TITLE_AUDIO_DURATION * 1000) + parseInt(STORY_AUDIO_DURATION * 1000) + 1000;
-
-            //  And now, with TTS baked, emit this to all clients
-            console.log('Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+TOTAL_DURATION+'...');
-            WHICH_STORY++;
-            STORY = [];
-            STORY_TITLE = [];
-            STORY_TOP_CONTRIBUTORS = [];
-            STORY_ACTIVATE_TIME = (Date.now() + TOTAL_DURATION);
-            IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME, END_DATA, [TITLE_AUDIO_OBJ, STORY_AUDIO_OBJ]]);
+            negotiateFinalization(); // Finalize story in a separate async function
 
           } else {
             console.log('Body of Story submission DID NOT return "ok"! re-attempting...');
