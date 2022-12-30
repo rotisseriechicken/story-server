@@ -13,6 +13,9 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 //  Initializing spinner
 const schedule = require('node-schedule');
 
+//  Init mp3 duration inspector
+const getMP3Duration = require('get-mp3-duration');
+
 //  Initialize compression
 var lzutf8 = require('lzutf8');
 
@@ -256,31 +259,6 @@ function determineTopContributors(){
   return ARR_INTS;
 }
 
-/*
-async function getTTS(url) {
-  try{
-
-    //  Initialize music parser and fetching
-
-    const response = await fetch(url); // get the TTS from the internet
-    if(response.ok){
-      const buffer = await response.buffer();
-      const metadata = await parseBuffer(buffer, 'audio/mp3', { native: true });
-      const duration = metadata.format.duration;
-      return [response, duration];
-    } else {
-      console.log('Response was not OK! Response:');
-      console.log(response);
-      return [-1, 0]; // response was invalid or never returned
-    }
-  } catch(e){
-    console.log('Error in TTS!');
-    console.log(e);
-    return [-1, 0];
-  }
-}
-*/
-
 async function getTTS(url) {
   return new Promise((resolve, reject) => {
     request(url, (error, response, body) => {
@@ -290,55 +268,11 @@ async function getTTS(url) {
         return [-1, 0];
       }
 
-      const buffer = Buffer.from(body, 'utf8');
-      const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-
-      // Check for ID3v2 header
-      if (view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) {
-        console.log('Invalid ID3v2 header!');
-        resolve([-1, 0]);
-      }
-
-      // Get ID3v2 version
-      const version = view.getUint8(3);
-      if (version < 2 || version > 4) {
-        console.log('Unsupported ID3v2 version!');
-        resolve([-1, 0]);
-      }
-
-      // Get ID3v2 flags
-      const flags = view.getUint8(5);
-      const unsynchronisation = (flags & 0b10000000) !== 0;
-      const extendedHeader = (flags & 0b01000000) !== 0;
-      const experimental = (flags & 0b00100000) !== 0;
-
-      // Get ID3v2 size
-      let size = view.getUint8(6);
-      size = (size << 7) | view.getUint8(7);
-      size = (size << 7) | view.getUint8(8);
-      size = (size << 7) | view.getUint8(9);
-      size = (size << 7) | view.getUint8(10);
-      if (unsynchronisation) {
-        size = size - 1;
-      }
-
-      // Get audio duration
-      let offset = 10;
-      if (extendedHeader) {
-        offset += 10; // Skip extended header
-      }
-      while (offset < size) {
-        const frameId = String.fromCharCode(view.getUint8(offset), view.getUint8(offset + 1), view.getUint8(offset + 2), view.getUint8(offset + 3));
-        if (frameId === 'TLEN') { // 'TLEN' frame
-          const frameSize = (view.getUint8(offset + 4) << 24) | (view.getUint8(offset + 5) << 16) | (view.getUint8(offset + 6) << 8) | view.getUint8(offset + 7);
-          const duration = parseInt(String.fromCharCode(...new Uint8Array(buffer.buffer, offset + 10, frameSize)), 10);
-          resolve([body, duration]);
-          return;
-        }
-        offset += 10 + (view.getUint8(offset + 4) << 24) | (view.getUint8(offset + 5) << 16) | (view.getUint8(offset + 6) << 8) | view.getUint8(offset + 7);
-      }
-      console.log('Duration not found!');
-      resolve([-1, 0]);
+      //  if this works i'm going to kill myself and blow up my whole neighborhood
+      const narr_buffer = Buffer.from(body, 'utf8');
+      var duration = getMP3Duration(narr_buffer);
+      resolve([body, duration]);
+      
     });
   });
 }

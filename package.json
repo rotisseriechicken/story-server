@@ -15,7 +15,8 @@
     "socket.io-client": "^4.5.4",
     "node-schedule": "^2.1.0",
     "request": "^2.88.2",
-    "lzutf8": "^0.6.3"
+    "lzutf8": "^0.6.3",
+    "get-mp3-duration": "1.0.0"
   },
   "engines": {
     "node": ">=18"
