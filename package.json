@@ -20,6 +20,6 @@
     "music-metadata": "^8.1.0"
   },
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   }
 }
