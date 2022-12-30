@@ -13,10 +13,6 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 //  Initializing spinner
 const schedule = require('node-schedule');
 
-//  Initialize music parser and fetching
-const { parseBuffer } = await import ('music-metadata');
-const fetch = await import ('node-fetch');
-
 //  Initialize compression
 var lzutf8 = require('lzutf8');
 
@@ -262,6 +258,11 @@ function determineTopContributors(){
 
 async function getTTS(url) {
   try{
+
+    //  Initialize music parser and fetching
+    const { parseBuffer } = await import ('music-metadata');
+    const fetch = await import ('node-fetch');
+    
     const response = await fetch(url); // get the TTS from the internet
     if(response.ok){
       const buffer = await response.buffer();
