@@ -20,7 +20,7 @@ const musicmetadata = require('musicmetadata');
 var lzutf8 = require('lzutf8');
 
 //  Initialize readable stream module
-// const { Readable } = require('stream');
+const { Readable } = require('stream');
 
 // Static outbound server IPs
 var SERVER_IPS = ['3.134.238.10', '3.129.111.220', '52.15.118.168'];
@@ -295,8 +295,12 @@ async function getTTS(url) {
         console.log(error);
         return [-1, 0];
       }
+
+      const bodyStream = new Readable();
+      bodyStream.push(body);
+
       let duration;
-      const parser = new musicmetadata(body, function(err, metadata){
+      const parser = new musicmetadata(bodyStream, function(err, metadata){
         if(err){
           console.log('Error in TTS metadata parsing! Error:');
           console.log(err);
