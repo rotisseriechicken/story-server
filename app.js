@@ -259,19 +259,11 @@ function determineTopContributors(){
   return ARR_INTS;
 }
 
-async function getTTS(url) {
-  request(url, (error, response, body) => {
-    if (error) {
-      console.log('Error in getTTS! Error:');
-      console.log(error);
-      return [-1, 0];
-    }
-
-    const narr_buffer = Buffer.from(body, 'utf8');
-    const metadata = await mm.parseBuffer(narr_buffer, 'audio/mpeg', {duration: true});
-
-    return [narr_buffer, parseInt(metadata.format.duration*1000)];
-
+async function getTTSREQ(url) {
+  return new Promise((resolve, reject) => {
+    request(url, (error, response, body) => {
+      resolve([error, response, body]);
+    });
   });
 }
 
@@ -318,8 +310,32 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   console.log('Story request: ' + STORY_REQUEST);
 
   //  Bake TTS as data to send to all clients
-  var TITLE_AUDIO_OBJ = await getTTS(TITLE_REQUEST);
-  var STORY_AUDIO_OBJ = await getTTS(STORY_REQUEST);
+
+  var TITLE_TTSREQ = await getTTSREQ(TITLE_REQUEST);
+  var STORY_TTSREQ = await getTTSREQ(STORY_REQUEST);
+
+  var TITLE_AUDIO_OBJ;
+  var STORY_AUDIO_OBJ;
+
+  if (TITLE_TTSREQ[0]) {
+    console.log('Error in Title getTTS! Error:');
+    console.log(error);
+    TITLE_AUDIO_OBJ = [-1, 0];
+  } else {
+    const TITLE_metadata = await mm.parseBuffer(TITLE_TTSREQ[1].body, 'audio/mpeg', {duration: true});
+    TITLE_AUDIO_OBJ = [TITLE_TTSREQ[1].body, parseInt(TITLE_metadata.format.duration*1000)];
+  }
+
+  if (STORY_TTSREQ[0]) {
+    console.log('Error in Story getTTS! Error:');
+    console.log(error);
+    STORY_AUDIO_OBJ = [-1, 0];
+  } else {
+    const STORY_metadata = await mm.parseBuffer(STORY_TTSREQ[1].body, 'audio/mpeg', {duration: true});
+    STORY_AUDIO_OBJ = [STORY_TTSREQ[1].body, parseInt(STORY_metadata.format.duration*1000)];
+  }
+
+  // const narr_buffer = Buffer.from(body, 'utf8');
 
   var TITLE_AUDIO = TITLE_AUDIO_OBJ[0]; // The raw response objects for the stories
   var STORY_AUDIO = STORY_AUDIO_OBJ[0];
