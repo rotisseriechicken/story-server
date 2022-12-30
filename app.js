@@ -268,11 +268,16 @@ async function getTTS(url) {
     }
 
     const narr_buffer = Buffer.from(body, 'utf8');
-    const metadata = await parseBuffer(narr_buffer, 'audio/mpeg');
+    const metadata = await getTTSMetadata(narr_buffer);
 
     return [narr_buffer, parseInt(metadata.format.duration*1000)];
 
   });
+}
+
+async function getTTSMetadata(bufferItem){
+    const metadata = await parseBuffer(narr_buffer, 'audio/mpeg', {duration: true});
+    return metadata;
 }
 
 function getCompressedStory(){
