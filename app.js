@@ -16,9 +16,6 @@ const schedule = require('node-schedule');
 //  Initialize compression
 var lzutf8 = require('lzutf8');
 
-//  Initialize music metadata module
-var mm = require('music-metadata');
-
 // Static outbound server IPs
 var SERVER_IPS = ['3.134.238.10', '3.129.111.220', '52.15.118.168'];
 
@@ -261,7 +258,8 @@ function determineTopContributors(){
 
 async function getTTS(url) {
   try{
-    //  try a dynamic local import
+    //  try a dynamic local import 
+    const { mm } = await import('music-metadata');
     const { fetch } = await import('node-fetch');
     const response = await fetch(url); // get the TTS from the internet
     if(response.ok){
