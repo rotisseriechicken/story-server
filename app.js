@@ -13,14 +13,8 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 //  Initializing spinner
 const schedule = require('node-schedule');
 
-//  Initializing music metadata
-const musicmetadata = require('musicmetadata');
-
 //  Initialize compression
 var lzutf8 = require('lzutf8');
-
-//  Initialize readable stream module
-const { Readable } = require('stream');
 
 // Static outbound server IPs
 var SERVER_IPS = ['3.134.238.10', '3.129.111.220', '52.15.118.168'];
@@ -296,19 +290,55 @@ async function getTTS(url) {
         return [-1, 0];
       }
 
-      const bodyStream = new Readable();
-      bodyStream.push(body);
+      const buffer = Buffer.from(body, 'utf8');
+      const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 
-      let duration;
-      const parser = new musicmetadata(bodyStream, function(err, metadata){
-        if(err){
-          console.log('Error in TTS metadata parsing! Error:');
-          console.log(err);
-        } else {
-          duration = parseInt(metadata.duration * 1000);
+      // Check for ID3v2 header
+      if (view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) {
+        console.log('Invalid ID3v2 header!');
+        resolve([-1, 0]);
+      }
+
+      // Get ID3v2 version
+      const version = view.getUint8(3);
+      if (version < 2 || version > 4) {
+        console.log('Unsupported ID3v2 version!');
+        resolve([-1, 0]);
+      }
+
+      // Get ID3v2 flags
+      const flags = view.getUint8(5);
+      const unsynchronisation = (flags & 0b10000000) !== 0;
+      const extendedHeader = (flags & 0b01000000) !== 0;
+      const experimental = (flags & 0b00100000) !== 0;
+
+      // Get ID3v2 size
+      let size = view.getUint8(6);
+      size = (size << 7) | view.getUint8(7);
+      size = (size << 7) | view.getUint8(8);
+      size = (size << 7) | view.getUint8(9);
+      size = (size << 7) | view.getUint8(10);
+      if (unsynchronisation) {
+        size = size - 1;
+      }
+
+      // Get audio duration
+      let offset = 10;
+      if (extendedHeader) {
+        offset += 10; // Skip extended header
+      }
+      while (offset < size) {
+        const frameId = String.fromCharCode(view.getUint8(offset), view.getUint8(offset + 1), view.getUint8(offset + 2), view.getUint8(offset + 3));
+        if (frameId === 'TLEN') { // 'TLEN' frame
+          const frameSize = (view.getUint8(offset + 4) << 24) | (view.getUint8(offset + 5) << 16) | (view.getUint8(offset + 6) << 8) | view.getUint8(offset + 7);
+          const duration = parseInt(String.fromCharCode(...new Uint8Array(buffer.buffer, offset + 10, frameSize)), 10);
           resolve([body, duration]);
+          return;
         }
-      });
+        offset += 10 + (view.getUint8(offset + 4) << 24) | (view.getUint8(offset + 5) << 16) | (view.getUint8(offset + 6) << 8) | view.getUint8(offset + 7);
+      }
+      console.log('Duration not found!');
+      resolve([-1, 0]);
     });
   });
 }
