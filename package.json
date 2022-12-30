@@ -7,6 +7,7 @@
   "author": "ROTISSERIE CHICKEN",
   "license": false,
   "private": false,
+  "type": "module",
   "scripts": {
     "start": "node app.js"
   },
@@ -16,7 +17,7 @@
     "node-schedule": "^2.1.0",
     "request": "^2.88.2",
     "lzutf8": "^0.6.3",
-    "mp3-duration": "1.0.0"
+    "music-metadata": "^8.1.0"
   },
   "engines": {
     "node": ">=18"

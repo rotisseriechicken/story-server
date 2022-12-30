@@ -14,7 +14,7 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 const schedule = require('node-schedule');
 
 //  Init mp3 duration inspector
-const mp3Duration = require('mp3-duration');
+import * as mm from 'music-metadata/lib/core';
 
 //  Initialize compression
 var lzutf8 = require('lzutf8');
@@ -260,20 +260,18 @@ function determineTopContributors(){
 }
 
 async function getTTS(url) {
-  return new Promise((resolve, reject) => {
-    request(url, (error, response, body) => {
-      if (error) {
-        console.log('Error in getTTS! Error:');
-        console.log(error);
-        return [-1, 0];
-      }
+  request(url, (error, response, body) => {
+    if (error) {
+      console.log('Error in getTTS! Error:');
+      console.log(error);
+      return [-1, 0];
+    }
 
-      const narr_buffer = Buffer.from(body, 'utf8');
-      mp3Duration(narr_buffer, function (err, duration) {
-        if(err){console.log('Problem parsing duration!');console.log(err);}
-        resolve([narr_buffer, parseInt(duration*1000)]);
-      });
-    });
+    const narr_buffer = Buffer.from(body, 'utf8');
+    const metadata = await parseBuffer(narr_buffer, 'audio/mpeg');
+
+    return [narr_buffer, parseInt(metadata.format.duration*1000)];
+
   });
 }
 
