@@ -256,6 +256,22 @@ function determineTopContributors(){
   return ARR_INTS;
 }
 
+async function getTTS(url) {
+  try{
+    const response = await fetch(url); // get the TTS from the internet
+    if(response.ok){
+      const buffer = await response.buffer();
+      const metadata = await mm.parseBuffer(buffer, 'audio/mp3', { native: true });
+      const duration = metadata.format.duration;
+      return [response, duration];
+    } else {
+      return [-1, 0]; // response was invalid or never returned
+    }
+  } catch(e){
+    return [-1, 0];
+  }
+}
+
 function getCompressedStory(){
   var WORD_ARRAY = [];
   var BY_ARRAY = [];
@@ -290,7 +306,7 @@ function timeoutSubmission(TO_CHECK){
   }
 }
 
-function submitStory(IO_REFERENCE){
+async function submitStory(IO_REFERENCE){
   TIMEOUT_ELAPSE_CHECK_NUM++;
   var COMPRESSED_STORY = getCompressedStory();
   const FORM_DATA = { // create the template form data object for this submission
@@ -301,10 +317,8 @@ function submitStory(IO_REFERENCE){
     completed: Date.now(), 
     ver: VERSION
   };
-  var END_DATA = {
-    started: STORY_ACTIVATE_TIME,
-    completed: Date.now()
-  }
+  var END_DATA = [STORY_ACTIVATE_TIME, Date.now()]; // Sent to clients on finish
+  var FULL_STORY_AS_STRING = conjugateStoryOrTitleForXWords(STORY, STORY.length);
   console.log('STORY: '); console.log(FORM_DATA);
   request.post( // submit the story to Chicken HQ's server
     'https://rotisseriechicken.world/story/stories/api/submit.php',
@@ -315,15 +329,30 @@ function submitStory(IO_REFERENCE){
         console.log('body:');
         console.log(body);
           if(body == 'ok'){
-            console.log('STORY #' + WHICH_STORY + ' successfully submitted! Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+CUTSCENE_TIME+'...');
+            console.log('STORY #' + WHICH_STORY + ' successfully submitted! Cooking TTS...');
+
+            //  Bake TTS as data to send to all clients
+            var TITLE_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + COMPRESSED_STORY[2]));
+            var STORY_AUDIO_OBJ = await getTTS('https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(FULL_STORY_AS_STRING));
+
+            var TITLE_AUDIO = TITLE_AUDIO_OBJ[0]; // The raw response objects for the stories
+            var STORY_AUDIO = STORY_AUDIO_OBJ[0];
+            var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
+            var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
+
+            var TOTAL_DURATION = parseInt(TITLE_AUDIO_DURATION * 1000) + parseInt(STORY_AUDIO_DURATION * 1000) + 1000;
+
+            //  And now, with TTS baked, emit this to all clients
+            console.log('Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+TOTAL_DURATION+'...');
             WHICH_STORY++;
             STORY = [];
             STORY_TITLE = [];
             STORY_TOP_CONTRIBUTORS = [];
-            STORY_ACTIVATE_TIME = (Date.now() + CUTSCENE_TIME);
-            IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME, END_DATA]);
+            STORY_ACTIVATE_TIME = (Date.now() + TOTAL_DURATION);
+            IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME, END_DATA, [TITLE_AUDIO_OBJ, STORY_AUDIO_OBJ]]);
+
           } else {
-            console.log('Body DID NOT return "ok"! re-attempting...');
+            console.log('Body of Story submission DID NOT return "ok"! re-attempting...');
             setTimeout(function() {
               submitStory(IO_REFERENCE);
             }, RESUBMIT_WAIT_TIME);
