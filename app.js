@@ -14,7 +14,7 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 const schedule = require('node-schedule');
 
 //  Init mp3 duration inspector
-const getMP3Duration = require('get-mp3-duration');
+const mp3Duration = require('mp3-duration');
 
 //  Initialize compression
 var lzutf8 = require('lzutf8');
@@ -268,11 +268,11 @@ async function getTTS(url) {
         return [-1, 0];
       }
 
-      //  if this works i'm going to kill myself and blow up my whole neighborhood
       const narr_buffer = Buffer.from(body, 'utf8');
-      var duration = getMP3Duration(narr_buffer);
-      resolve([body, duration]);
-      
+      mp3Duration(narr_buffer, function (err, duration) {
+        if(err){console.log('Problem parsing duration!');console.log(err);}
+        resolve([narr_buffer, parseInt(duration*1000)]);
+      }
     });
   });
 }
@@ -327,6 +327,8 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   var STORY_AUDIO = STORY_AUDIO_OBJ[0];
   var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
   var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
+
+  console.log('Durations estimated to be ' + TITLE_AUDIO_DURATION + ' and ' + STORY_AUDIO_DURATION + '.');
 
   var TOTAL_DURATION = TITLE_AUDIO_DURATION + STORY_AUDIO_DURATION + 1500; // Average TTS request coordination is ~1000
 
