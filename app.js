@@ -262,6 +262,9 @@ function determineTopContributors(){
 async function getTTSREQ(url) {
   return new Promise((resolve, reject) => {
     request(url, (error, response, body) => {
+      if(error){
+        console.log('Error in getTTSREQ!');
+      }
       resolve([error, response, body]);
     });
   });
@@ -311,11 +314,15 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
 
   //  Bake TTS as data to send to all clients
 
+  console.log('Pre await');
+
   var TITLE_TTSREQ = await getTTSREQ(TITLE_REQUEST);
   var STORY_TTSREQ = await getTTSREQ(STORY_REQUEST);
 
-  var TITLE_AUDIO_OBJ;
-  var STORY_AUDIO_OBJ;
+  console.log('Awaited properly');
+
+  var TITLE_AUDIO_OBJ = [-1, 0];
+  var STORY_AUDIO_OBJ = [-1, 0];
   const TITLE_metadata;
   const STORY_metadata;
 
@@ -325,8 +332,10 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
     console.log(error);
     TITLE_AUDIO_OBJ = [-1, 0];
   } else {
+    console.log('Awaiting title parsebuffer');
     TITLE_metadata = await mm.parseBuffer(TITLE_TTSREQ[1].body, 'audio/mpeg', {duration: true});
     TITLE_AUDIO_OBJ = [TITLE_TTSREQ[1].body, parseInt(TITLE_metadata.format.duration*1000)];
+    console.log('Title Parsebuffer parsed');
   }
 
   if (STORY_TTSREQ[0]) {
@@ -334,30 +343,35 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
     console.log(error);
     STORY_AUDIO_OBJ = [-1, 0];
   } else {
+    console.log('Awaiting story parsebuffer');
     STORY_metadata = await mm.parseBuffer(STORY_TTSREQ[1].body, 'audio/mpeg', {duration: true});
     STORY_AUDIO_OBJ = [STORY_TTSREQ[1].body, parseInt(STORY_metadata.format.duration*1000)];
+    console.log('Story Parsebuffer parsed');
   }
 
-  const title_buffer = Buffer.from(TITLE_TTSREQ[1].body);
-  const story_buffer = Buffer.from(STORY_TTSREQ[1].body);
+  var title_buffer = Buffer.from(TITLE_TTSREQ[1].body);
+  var story_buffer = Buffer.from(STORY_TTSREQ[1].body);
   var title_b64 = title_buffer.toString('base64');
   var story_b64 = story_buffer.toString('base64');
   var title_b64btoa = btoa(title_b64);
   var story_b64btoa = btoa(story_b64);
-  const title_b64_url = `data:audio/mpeg;base64,${title_b64url}`;
-  const story_b64_url = `data:audio/mpeg;base64,${story_b64url}`;
+  var title_b64_url = 'data:audio/mpeg;base64,' + title_b64btoa;
+  var story_b64_url = 'data:audio/mpeg;base64,' + story_b64btoa;
 
-  var TITLE_AUDIO = title_b64_url; // The raw response objects for the stories
-  var STORY_AUDIO = story_b64_url;
   var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
   var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
 
-  TITLE_AUDIO_OBJ[0] = TITLE_AUDIO;
+  TITLE_AUDIO_OBJ[0] = title_b64_url;
   TITLE_AUDIO_OBJ[2] = TITLE_metadata;
-  STORY_AUDIO_OBJ[0] = STORY_AUDIO;
+  STORY_AUDIO_OBJ[0] = story_b64_url;
   STORY_AUDIO_OBJ[2] = STORY_metadata;
 
-  console.log('Durations estimated to be ' + TITLE_AUDIO_DURATION + ' and ' + STORY_AUDIO_DURATION + '.');
+  console.log('TITLE AUDIO OBJECT:');
+  console.log(TITLE_AUDIO_OBJ);
+  console.log('STORY AUDIO OBJECT:');
+  console.log(STORY_AUDIO_OBJ);
+
+
 
   var TOTAL_DURATION = TITLE_AUDIO_DURATION + STORY_AUDIO_DURATION + 1500; // Average TTS request coordination is ~1000
 
