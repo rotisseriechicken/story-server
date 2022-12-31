@@ -257,9 +257,9 @@ function determineTopContributors(){
   return ARR_INTS;
 }
 
-async function getTTSREQ(url) {
+async function getTTSREQ(this_url) {
   return new Promise((resolve, reject) => {
-    request(url, (error, response, body) => {
+    request({url: this_url, encoding: null}, (error, response, body) => {
       if(error){
         console.log('Error in getTTSREQ!');
       }
@@ -323,8 +323,12 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
 
   //  Determine approximate TTS file durations
   try{
-    var title_bitlength = Buffer.byteLength(TITLE_TTSREQ[2], 'utf8') * 8;
-    var story_bitlength = Buffer.byteLength(STORY_TTSREQ[2], 'utf8') * 8;
+    var title_bitlength = (Buffer.byteLength(TITLE_TTSREQ[2])) * 8;
+    var story_bitlength = (Buffer.byteLength(STORY_TTSREQ[2])) * 8;
+      console.log('Title\'s size is estimated to be:');
+      console.log(title_bitlength);
+      console.log('Story\'s size is estimated to be:');
+      console.log(story_bitlength);
     var title_approximate_duration = title_bitlength / TTS_SAMPLERATE;
     var story_approximate_duration = story_bitlength / TTS_SAMPLERATE;
     TITLE_AUDIO_OBJ = [TITLE_REQUEST, parseInt(title_approximate_duration*1000)];
