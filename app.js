@@ -325,13 +325,16 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   var TITLE_metadata;
   var STORY_metadata;
 
+  var title_buffer = Buffer.from(TITLE_TTSREQ[1].body);
+  var story_buffer = Buffer.from(STORY_TTSREQ[1].body);
+
   if (TITLE_TTSREQ[0]) {
     console.log('Error in Title getTTS! Error:');
     console.log(error);
     TITLE_AUDIO_OBJ = [-1, 0];
   } else {
     console.log('Awaiting title parsebuffer');
-    TITLE_metadata = await mm.parseBuffer(TITLE_TTSREQ[1].body, 'audio/mpeg', {duration: true});
+    TITLE_metadata = await mm.parseBuffer(title_buffer, 'audio/mpeg', {duration: true});
     TITLE_AUDIO_OBJ = [TITLE_TTSREQ[1].body, parseInt(TITLE_metadata.format.duration*1000)];
     console.log('Title Parsebuffer parsed');
   }
@@ -342,14 +345,12 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
     STORY_AUDIO_OBJ = [-1, 0];
   } else {
     console.log('Awaiting story parsebuffer');
-    STORY_metadata = await mm.parseBuffer(STORY_TTSREQ[1].body, 'audio/mpeg', {duration: true});
+    STORY_metadata = await mm.parseBuffer(story_buffer, 'audio/mpeg', {duration: true});
     STORY_AUDIO_OBJ = [STORY_TTSREQ[1].body, parseInt(STORY_metadata.format.duration*1000)];
     console.log('Story Parsebuffer parsed');
   }
 
   //  Mutate to base64 data url for clients
-  var title_buffer = Buffer.from(TITLE_TTSREQ[1].body);
-  var story_buffer = Buffer.from(STORY_TTSREQ[1].body);
   var title_b64 = title_buffer.toString('base64');
   var story_b64 = story_buffer.toString('base64');
   var title_b64btoa = btoa(title_b64);
