@@ -330,22 +330,12 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   var story_bitlength = story_buffer.byteLength * 8;
   var title_approximate_duration = title_bitlength / TTS_SAMPLERATE;
   var story_approximate_duration = story_bitlength / TTS_SAMPLERATE;
-
   TITLE_AUDIO_OBJ = [TITLE_REQUEST, parseInt(duration*1000)];
   STORY_AUDIO_OBJ = [STORY_REQUEST, parseInt(duration*1000)];
-
-  var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
-  var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
-
-  // TITLE_AUDIO_OBJ[0] = title_b64_url;
-  TITLE_AUDIO_OBJ[2] = TITLE_metadata;
-  // STORY_AUDIO_OBJ[0] = story_b64_url;
-  STORY_AUDIO_OBJ[2] = STORY_metadata;
-
   console.log('Committed TTS');
 
   //  Combine durations with 1500ms buffer
-  var TOTAL_DURATION = TITLE_AUDIO_DURATION + STORY_AUDIO_DURATION + 1500; // Average TTS request coordination is ~1000
+  var TOTAL_DURATION = TITLE_AUDIO_OBJ[1] + STORY_AUDIO_OBJ[1] + 1800; // Average TTS request coordination is ~1000
 
   //  And now, with TTS baked, emit this to all clients
   console.log('Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+TOTAL_DURATION+'...');
