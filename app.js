@@ -320,18 +320,18 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   //  Initiate TTS objects
   var TITLE_AUDIO_OBJ = [-1, 0];
   var STORY_AUDIO_OBJ = [-1, 0];
-  var TITLE_metadata;
-  var STORY_metadata;
 
   //  Determine approximate TTS file durations
-  var title_buffer = Buffer.from(TITLE_TTSREQ[1].body);
-  var story_buffer = Buffer.from(STORY_TTSREQ[1].body);
-  var title_bitlength = title_buffer.byteLength * 8;
-  var story_bitlength = story_buffer.byteLength * 8;
-  var title_approximate_duration = title_bitlength / TTS_SAMPLERATE;
-  var story_approximate_duration = story_bitlength / TTS_SAMPLERATE;
-  TITLE_AUDIO_OBJ = [TITLE_REQUEST, parseInt(duration*1000)];
-  STORY_AUDIO_OBJ = [STORY_REQUEST, parseInt(duration*1000)];
+  try{
+    var title_buffer = Buffer.from(TITLE_TTSREQ[1].body);
+    var story_buffer = Buffer.from(STORY_TTSREQ[1].body);
+    var title_bitlength = Buffer.byteLength(title_buffer) * 8;
+    var story_bitlength = Buffer.byteLength(story_buffer) * 8;
+    var title_approximate_duration = title_bitlength / TTS_SAMPLERATE;
+    var story_approximate_duration = story_bitlength / TTS_SAMPLERATE;
+    TITLE_AUDIO_OBJ = [TITLE_REQUEST, parseInt(title_approximate_duration*1000)];
+    STORY_AUDIO_OBJ = [STORY_REQUEST, parseInt(story_approximate_duration*1000)];
+  }catch(e){console.log(e)}
   console.log('Committed TTS');
 
   //  Combine durations with 1500ms buffer
