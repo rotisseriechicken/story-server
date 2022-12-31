@@ -14,7 +14,7 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 const schedule = require('node-schedule');
 
 //  Init mp3 duration inspector
-const mm = require('music-metadata');
+var mp3Duration = require('mp3-duration');
 
 //  Initialize compression
 var lzutf8 = require('lzutf8');
@@ -333,10 +333,15 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
     console.log(error);
     TITLE_AUDIO_OBJ = [-1, 0];
   } else {
-    console.log('Awaiting title parsebuffer');
-    TITLE_metadata = await mm.parseBuffer(title_buffer, 'audio/mpeg', {duration: true});
-    TITLE_AUDIO_OBJ = [TITLE_TTSREQ[1].body, parseInt(TITLE_metadata.format.duration*1000)];
-    console.log('Title Parsebuffer parsed');
+    console.log('Awaiting title mp3Duration');
+    mp3Duration(title_buffer, function (err, duration) {
+      if (err){ console.log(err.message); }
+      console.log('Title is ' + duration + ' seconds long');
+      TITLE_AUDIO_OBJ = [title_buffer, parseInt(duration*1000)];
+    });
+    // TITLE_metadata = await mm.parseBuffer(title_buffer, 'audio/mpeg', {duration: true});
+    // TITLE_AUDIO_OBJ = [title_buffer, parseInt(TITLE_metadata.format.duration*1000)];
+    console.log('Title mp3Duration parsed');
   }
 
   if (STORY_TTSREQ[0]) {
@@ -344,10 +349,15 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
     console.log(error);
     STORY_AUDIO_OBJ = [-1, 0];
   } else {
-    console.log('Awaiting story parsebuffer');
-    STORY_metadata = await mm.parseBuffer(story_buffer, 'audio/mpeg', {duration: true});
-    STORY_AUDIO_OBJ = [STORY_TTSREQ[1].body, parseInt(STORY_metadata.format.duration*1000)];
-    console.log('Story Parsebuffer parsed');
+    console.log('Awaiting story mp3Duration');
+    mp3Duration(story_buffer, function (err, duration) {
+      if (err){ console.log(err.message); }
+      console.log('Title is ' + duration + ' seconds long');
+      STORY_AUDIO_OBJ = [story_buffer, parseInt(duration*1000)];
+    });
+    // STORY_metadata = await mm.parseBuffer(story_buffer, 'audio/mpeg', {duration: true});
+    // STORY_AUDIO_OBJ = [story_buffer, parseInt(STORY_metadata.format.duration*1000)];
+    console.log('Story mp3Duration parsed');
   }
 
   //  Mutate to base64 data url for clients
