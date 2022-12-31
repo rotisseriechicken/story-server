@@ -323,9 +323,8 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
 
   var TITLE_AUDIO_OBJ = [-1, 0];
   var STORY_AUDIO_OBJ = [-1, 0];
-  const TITLE_metadata;
-  const STORY_metadata;
-
+  var TITLE_metadata;
+  var STORY_metadata;
 
   if (TITLE_TTSREQ[0]) {
     console.log('Error in Title getTTS! Error:');
