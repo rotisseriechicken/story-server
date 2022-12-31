@@ -361,15 +361,12 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
   var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
 
-  TITLE_AUDIO_OBJ[0] = title_b64_url;
+  // TITLE_AUDIO_OBJ[0] = title_b64_url;
   TITLE_AUDIO_OBJ[2] = TITLE_metadata;
-  STORY_AUDIO_OBJ[0] = story_b64_url;
+  // STORY_AUDIO_OBJ[0] = story_b64_url;
   STORY_AUDIO_OBJ[2] = STORY_metadata;
 
-  console.log('TITLE AUDIO OBJECT:');
-  console.log(TITLE_AUDIO_OBJ);
-  console.log('STORY AUDIO OBJECT:');
-  console.log(STORY_AUDIO_OBJ);
+  console.log('Committed TTS');
 
   //  Combine durations with 1500ms buffer
   var TOTAL_DURATION = TITLE_AUDIO_DURATION + STORY_AUDIO_DURATION + 1500; // Average TTS request coordination is ~1000
