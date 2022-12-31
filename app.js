@@ -341,14 +341,14 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
 
   //  And now, with TTS baked, emit this to all clients
   console.log('Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+TOTAL_DURATION+'...');
-  WHICH_STORY++;
-  STORY = [];
-  STORY_TITLE = [];
-  STORY_TOP_CONTRIBUTORS = [];
-  STORY_ACTIVATE_TIME = (Date.now() + TOTAL_DURATION);
+  STORY_ACTIVATE_TIME = (Date.now() + TOTAL_DURATION + 10);
   IO_REFERENCE.emit('f', [WHICH_STORY, STORY_ACTIVATE_TIME, [STORY_ACTIVATE_TIME, Date.now()], [TITLE_AUDIO_OBJ, STORY_AUDIO_OBJ]]);
   //  now schedule the gamemode setting to 0 in the amount of time it takes to reach the duration
   setTimeout(function(){
+    WHICH_STORY++;
+    STORY = [];
+    STORY_TITLE = [];
+    STORY_TOP_CONTRIBUTORS = [];
     STORY_MODE = 0;
   }, TOTAL_DURATION);
 }
