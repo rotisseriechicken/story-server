@@ -149,6 +149,36 @@ var TIMEOUT_ELAPSE_CHECK_NUM = 0; // if this number is the same after titling ti
 
 var MINIMUM_SESSION_DURATION_MINS = 30; // In (this number) of minutes, users' UUIDs may be lost.
 
+var NARRATOR_ARRAY = [ // List of narrators that can be selected for the narration cutscene process
+  'Matthew',
+  'Matthew',
+  'Matthew',
+  'Matthew',
+  'Matthew',
+
+  'Geraint',
+  'Geraint',
+  'Geraint',
+
+  'Brian',
+  'Brian',
+  'Justin',
+  'Justin',
+
+  'Joey',
+  'Salli',
+  'Kimberly',
+  'Kendra',
+  'Russell',
+
+  'Mizuki',
+  'Giorgio',
+  'Carla',
+  'Mathieu',
+  'Chantal',
+  'Miguel',
+  'Zhiyu'
+];
 
 
 
@@ -304,9 +334,12 @@ function timeoutSubmission(TO_CHECK){
 
 async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
 
+  //  Select a TTS voice
+  var SELECTED_VOICE = NARRATOR_ARRAY[(Math.floor(Math.random() * NARRATOR_ARRAY.length))];
+
   //  Prepare TTS requests
-  var TITLE_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + TITLESTRING);
-  var STORY_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(STORYSTRING);
+  var TITLE_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice='+SELECTED_VOICE+'&text=' + encodeURIComponent('The story of ' + TITLESTRING);
+  var STORY_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice='+SELECTED_VOICE+'&text=' + encodeURIComponent(STORYSTRING);
 
   console.log('Title request: ' + TITLE_REQUEST);
   console.log('Story request: ' + STORY_REQUEST);
@@ -337,7 +370,7 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   console.log('Committed TTS');
 
   //  Combine durations with 1500ms buffer
-  var TOTAL_DURATION = TITLE_AUDIO_OBJ[1] + STORY_AUDIO_OBJ[1] + 500; // Average TTS request coordination is ~1000
+  var TOTAL_DURATION = TITLE_AUDIO_OBJ[1] + STORY_AUDIO_OBJ[1] + 150; // Average TTS request coordination is ~1000
 
   //  And now, with TTS baked, emit this to all clients
   console.log('Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+TOTAL_DURATION+'...');
