@@ -323,8 +323,8 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
 
   //  Determine approximate TTS file durations
   try{
-    var title_bitlength = (Buffer.byteLength(TITLE_TTSREQ[2])) * 8;
-    var story_bitlength = (Buffer.byteLength(STORY_TTSREQ[2])) * 8;
+    var title_bitlength = (TITLE_TTSREQ[2].length) * 8;
+    var story_bitlength = (STORY_TTSREQ[2].length) * 8;
       console.log('Title\'s size is estimated to be:');
       console.log(title_bitlength);
       console.log('Story\'s size is estimated to be:');
