@@ -13,9 +13,6 @@ var client_socket = client_io.connect('https://story-server.onrender.com/', {rec
 //  Initializing spinner
 const schedule = require('node-schedule');
 
-//  Init mp3 duration inspector
-var mp3Duration = require('mp3-duration');
-
 //  Initialize compression
 var lzutf8 = require('lzutf8');
 
@@ -143,7 +140,8 @@ var STORY_TOP_CONTRIBUTORS = []; // Contributors which can still submit to the t
 var STORY_ACTIVATE_TIME = Date.now(); // The time at which the next story will begin.
 var TITLE_END_TIME = Date.now(); // The time at which the titling process will end.
 
-var CUTSCENE_TIME = 40000; // 15000; // Server-enforced time between games (cutscene duration!) 
+// var CUTSCENE_TIME = 40000; // 15000; // Server-enforced time between games (cutscene duration!) 
+var TTS_SAMPLERATE = 48000; // This is now responsible for determining cutscene times!
 
 var FLAG_SPUN_ONCE = false; // If true, the spinner has begun
 var ITERATIVE_UUID = 0; // this number will be new users' iterating UUID
@@ -319,54 +317,22 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   var STORY_TTSREQ = await getTTSREQ(STORY_REQUEST);
   console.log('Awaited properly');
 
-  //  Determine TTS durations
+  //  Initiate TTS objects
   var TITLE_AUDIO_OBJ = [-1, 0];
   var STORY_AUDIO_OBJ = [-1, 0];
   var TITLE_metadata;
   var STORY_metadata;
 
+  //  Determine approximate TTS file durations
   var title_buffer = Buffer.from(TITLE_TTSREQ[1].body);
   var story_buffer = Buffer.from(STORY_TTSREQ[1].body);
+  var title_bitlength = title_buffer.byteLength * 8;
+  var story_bitlength = story_buffer.byteLength * 8;
+  var title_approximate_duration = title_bitlength / TTS_SAMPLERATE;
+  var story_approximate_duration = story_bitlength / TTS_SAMPLERATE;
 
-  if (TITLE_TTSREQ[0]) {
-    console.log('Error in Title getTTS! Error:');
-    console.log(error);
-    TITLE_AUDIO_OBJ = [-1, 0];
-  } else {
-    console.log('Awaiting title mp3Duration');
-    mp3Duration(title_buffer, function (err, duration) {
-      if (err){ console.log(err.message); }
-      console.log('Title is ' + duration + ' seconds long');
-      TITLE_AUDIO_OBJ = [title_buffer, parseInt(duration*1000)];
-    });
-    // TITLE_metadata = await mm.parseBuffer(title_buffer, 'audio/mpeg', {duration: true});
-    // TITLE_AUDIO_OBJ = [title_buffer, parseInt(TITLE_metadata.format.duration*1000)];
-    console.log('Title mp3Duration parsed');
-  }
-
-  if (STORY_TTSREQ[0]) {
-    console.log('Error in Story getTTS! Error:');
-    console.log(error);
-    STORY_AUDIO_OBJ = [-1, 0];
-  } else {
-    console.log('Awaiting story mp3Duration');
-    mp3Duration(story_buffer, function (err, duration) {
-      if (err){ console.log(err.message); }
-      console.log('Title is ' + duration + ' seconds long');
-      STORY_AUDIO_OBJ = [story_buffer, parseInt(duration*1000)];
-    });
-    // STORY_metadata = await mm.parseBuffer(story_buffer, 'audio/mpeg', {duration: true});
-    // STORY_AUDIO_OBJ = [story_buffer, parseInt(STORY_metadata.format.duration*1000)];
-    console.log('Story mp3Duration parsed');
-  }
-
-  //  Mutate to base64 data url for clients
-  var title_b64 = title_buffer.toString('base64');
-  var story_b64 = story_buffer.toString('base64');
-  var title_b64btoa = btoa(title_b64);
-  var story_b64btoa = btoa(story_b64);
-  var title_b64_url = 'data:audio/mpeg;base64,' + title_b64btoa;
-  var story_b64_url = 'data:audio/mpeg;base64,' + story_b64btoa;
+  TITLE_AUDIO_OBJ = [TITLE_REQUEST, parseInt(duration*1000)];
+  STORY_AUDIO_OBJ = [STORY_REQUEST, parseInt(duration*1000)];
 
   var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
   var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
