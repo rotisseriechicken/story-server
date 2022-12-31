@@ -316,13 +316,16 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
 
   var TITLE_AUDIO_OBJ;
   var STORY_AUDIO_OBJ;
+  const TITLE_metadata;
+  const STORY_metadata;
+
 
   if (TITLE_TTSREQ[0]) {
     console.log('Error in Title getTTS! Error:');
     console.log(error);
     TITLE_AUDIO_OBJ = [-1, 0];
   } else {
-    const TITLE_metadata = await mm.parseBuffer(TITLE_TTSREQ[1].body, 'audio/mpeg', {duration: true});
+    TITLE_metadata = await mm.parseBuffer(TITLE_TTSREQ[1].body, 'audio/mpeg', {duration: true});
     TITLE_AUDIO_OBJ = [TITLE_TTSREQ[1].body, parseInt(TITLE_metadata.format.duration*1000)];
   }
 
@@ -331,7 +334,7 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
     console.log(error);
     STORY_AUDIO_OBJ = [-1, 0];
   } else {
-    const STORY_metadata = await mm.parseBuffer(STORY_TTSREQ[1].body, 'audio/mpeg', {duration: true});
+    STORY_metadata = await mm.parseBuffer(STORY_TTSREQ[1].body, 'audio/mpeg', {duration: true});
     STORY_AUDIO_OBJ = [STORY_TTSREQ[1].body, parseInt(STORY_metadata.format.duration*1000)];
   }
 
@@ -348,6 +351,11 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   var STORY_AUDIO = story_b64_url;
   var TITLE_AUDIO_DURATION = TITLE_AUDIO_OBJ[1]; // The duration of each story file
   var STORY_AUDIO_DURATION = STORY_AUDIO_OBJ[1]; 
+
+  TITLE_AUDIO_OBJ[0] = TITLE_AUDIO;
+  TITLE_AUDIO_OBJ[2] = TITLE_metadata;
+  STORY_AUDIO_OBJ[0] = STORY_AUDIO;
+  STORY_AUDIO_OBJ[2] = STORY_metadata;
 
   console.log('Durations estimated to be ' + TITLE_AUDIO_DURATION + ' and ' + STORY_AUDIO_DURATION + '.');
 
