@@ -7,7 +7,6 @@
   "author": "ROTISSERIE CHICKEN",
   "license": false,
   "private": false,
-  "type": "module",
   "scripts": {
     "start": "node app.js"
   },
