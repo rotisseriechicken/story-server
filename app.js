@@ -306,6 +306,7 @@ function timeoutSubmission(TO_CHECK){
 
 async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
 
+  //  Prepare TTS requests
   var TITLE_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent('The story of ' + TITLESTRING);
   var STORY_REQUEST = 'https://api.streamelements.com/kappa/v2/speech?voice=Matthew&text=' + encodeURIComponent(STORYSTRING);
 
@@ -313,14 +314,12 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   console.log('Story request: ' + STORY_REQUEST);
 
   //  Bake TTS as data to send to all clients
-
   console.log('Pre await');
-
   var TITLE_TTSREQ = await getTTSREQ(TITLE_REQUEST);
   var STORY_TTSREQ = await getTTSREQ(STORY_REQUEST);
-
   console.log('Awaited properly');
 
+  //  Determine TTS durations
   var TITLE_AUDIO_OBJ = [-1, 0];
   var STORY_AUDIO_OBJ = [-1, 0];
   var TITLE_metadata;
@@ -348,6 +347,7 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
     console.log('Story Parsebuffer parsed');
   }
 
+  //  Mutate to base64 data url for clients
   var title_buffer = Buffer.from(TITLE_TTSREQ[1].body);
   var story_buffer = Buffer.from(STORY_TTSREQ[1].body);
   var title_b64 = title_buffer.toString('base64');
@@ -370,8 +370,7 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   console.log('STORY AUDIO OBJECT:');
   console.log(STORY_AUDIO_OBJ);
 
-
-
+  //  Combine durations with 1500ms buffer
   var TOTAL_DURATION = TITLE_AUDIO_DURATION + STORY_AUDIO_DURATION + 1500; // Average TTS request coordination is ~1000
 
   //  And now, with TTS baked, emit this to all clients
