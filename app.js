@@ -650,7 +650,8 @@ io.on("connect", socket => {
                     if(STORY_TOP_CONTRIBUTORS.includes(parseInt(UserObject[socket.id][1]))){
                       //  Can submit to the title; Top contributor
                       STORY_TITLE.push(WORD_OBJECT);
-                      io.emit('s', [WORD_OBJECT]);
+                      socket.broadcast.emit('s', [WORD_OBJECT]);
+                      socket.emit('s', [WORD_OBJECT, 'Y']); // Proof of self successful submission
                       console.log('UUID ' + UserObject[socket.id][1] + ':  ' + CLEANWORD);
                       UserObject[socket.id][2] = '';
                       var STC_IND = STORY_TOP_CONTRIBUTORS.indexOf(UserObject[socket.id][1]);
