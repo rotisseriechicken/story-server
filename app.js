@@ -141,6 +141,7 @@ var STORY_ACTIVATE_TIME = Date.now(); // The time at which the next story will b
 var TITLE_END_TIME = Date.now(); // The time at which the titling process will end.
 
 // var CUTSCENE_TIME = 40000; // 15000; // Server-enforced time between games (cutscene duration!) 
+var TITLE_MAKING_DURATION = 25000; // This is how many seconds long the titling process is!
 var TTS_SAMPLERATE = 48000; // This is now responsible for determining cutscene times!
 
 var FLAG_SPUN_ONCE = false; // If true, the spinner has begun
@@ -162,6 +163,8 @@ var NARRATOR_ARRAY = [ // List of narrators that can be selected for the narrati
 
   'Brian',
   'Brian',
+  'Brian',
+
   'Justin',
   'Justin',
 
@@ -370,7 +373,10 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   console.log('Committed TTS');
 
   //  Combine durations with 1500ms buffer
-  var TOTAL_DURATION = TITLE_AUDIO_OBJ[1] + STORY_AUDIO_OBJ[1] + 150; // Average TTS request coordination is ~1000
+  var TOTAL_DURATION = TITLE_AUDIO_OBJ[1] + STORY_AUDIO_OBJ[1] + 150; // 150ms offset for coordination
+  if(TOTAL_DURATION > 60000){ // If total duration is greater than 60 seconds,
+    TOTAL_DURATION = 60000; // Limit the duration of the cutscene to 60 seconds
+  }
 
   //  And now, with TTS baked, emit this to all clients
   console.log('Scheduling story #'+(WHICH_STORY + 1)+' for '+Date.now()+' + '+TOTAL_DURATION+'...');
@@ -631,13 +637,13 @@ io.on("connect", socket => {
                       STORY_TOP_CONTRIBUTORS = determineTopContributors();
                       console.log('Top contributors:'); console.log(STORY_TOP_CONTRIBUTORS);
                       STORY_MODE = 2;
-                      TITLE_END_TIME = (Date.now() + 20000);
+                      TITLE_END_TIME = (Date.now() + TITLE_MAKING_DURATION);
                       io.emit('t', [STORY_TOP_CONTRIBUTORS, TITLE_END_TIME]);
 
                       //  in case the title is not determined in 25 seconds, auto-submit regardless
                       var verification = JSON.parse(JSON.stringify({storyNumber: TIMEOUT_ELAPSE_CHECK_NUM}));
                       var verf = verification.storyNumber;
-                      setTimeout(timeoutSubmission, 20000, verf);
+                      setTimeout(timeoutSubmission, TITLE_MAKING_DURATION, verf);
                     }
 
                   } else { // Add to the title
