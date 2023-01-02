@@ -517,7 +517,8 @@ io.on("connect", socket => {
                           [0, TUSERDATA], 
                           [STORY_TITLE, STORY_TOP_CONTRIBUTORS], 
                           STORY_ACTIVATE_TIME,
-                          TITLE_END_TIME
+                          TITLE_END_TIME,
+                          Date.now()
                        ]);
       socket.broadcast.emit('J', [This_UID]); // emit to all but joiner that a new client has joined
       console.log('O--> User ' + socket.id + ' (UUID '+This_UID+') '+rePrefix+'connected (' + currentlyOnline() + ' connected)');
