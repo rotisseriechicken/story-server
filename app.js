@@ -373,7 +373,7 @@ async function negotiateFinalization(TITLESTRING, STORYSTRING, IO_REFERENCE){
   console.log('Committed TTS');
 
   //  Combine durations with 1500ms buffer
-  var TOTAL_DURATION = TITLE_AUDIO_OBJ[1] + STORY_AUDIO_OBJ[1] + 150; // 150ms offset for coordination
+  var TOTAL_DURATION = TITLE_AUDIO_OBJ[1] + STORY_AUDIO_OBJ[1] + 1000; // 150ms offset for coordination
   if(TOTAL_DURATION > 60000){ // If total duration is greater than 60 seconds,
     TOTAL_DURATION = 60000; // Limit the duration of the cutscene to 60 seconds
   }
